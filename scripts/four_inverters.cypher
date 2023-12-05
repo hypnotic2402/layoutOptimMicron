@@ -7,7 +7,7 @@ CREATE (macro4: Macro {name:'macro4' , type:'rectangle', x1: 0.6, y1: 0.5, x2: 0
 
 CREATE (macro1)-[w1:IS_CONNECTED]->(macro2)
 CREATE (macro2)-[w2:IS_CONNECTED]->(macro3)
-CREATE (macro2)-[w2:IS_CONNECTED]->(macro4)
+CREATE (macro2)-[w3:IS_CONNECTED]->(macro4)
 
 
 // Projecting graph to GDS
