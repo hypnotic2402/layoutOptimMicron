@@ -1,0 +1,46 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : inv3                                         *
+* Netlisted  : Mon Nov 27 22:49:32 2023                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_6                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_6 B_tapLeft S_source_0 D_drain_1 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_tapLeft g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=136.009 scb=0.0848561 scc=0.0161283 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_6
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nmos1v_CDNS_7                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nmos1v_CDNS_7 S_source_0 B_tapLeft D_drain_1 4
+** N=4 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_tapLeft g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=5.77074 scb=0.00205317 scc=9.69393e-06 $X=0 $Y=0 $dt=0
+.ends nmos1v_CDNS_7
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inverter_final_new                              *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inverter_final_new vss vin vdd vout
+** N=4 EP=4 FDC=2
+X2 vdd vdd vout vin pmos1v_CDNS_6 $T=1780 2110 0 0 $X=880 $Y=1910
+X3 vss vss vout vin nmos1v_CDNS_7 $T=1780 580 0 0 $X=980 $Y=380
+.ends inverter_final_new
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inv3                                            *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inv3 vdd vin vout1 vout2 vss
+** N=7 EP=5 FDC=8
+X1 vss vin vdd 4 inverter_final_new $T=4660 4190 0 0 $X=4660 $Y=4120
+X2 vss 4 vdd 5 inverter_final_new $T=10160 4190 0 0 $X=10160 $Y=4120
+X3 vss 5 vdd vout1 inverter_final_new $T=15820 7650 0 0 $X=15820 $Y=7580
+X4 vss 5 vdd vout2 inverter_final_new $T=15860 1790 0 0 $X=15860 $Y=1720
+.ends inv3

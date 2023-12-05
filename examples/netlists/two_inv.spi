@@ -1,0 +1,44 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : inverter                                     *
+* Netlisted  : Wed Oct 25 23:11:36 2023                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_7                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_7 B_tapLeft S_source_0 D_drain_1 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_tapLeft g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=136.009 scb=0.0848561 scc=0.0161283 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_7
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nmos1v_CDNS_8                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nmos1v_CDNS_8 B_tapLeft S_source_0 D_drain_1 4 5
+** N=5 EP=5 FDC=1
+M0 D_drain_1 4 S_source_0 5 g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=12.2783 scb=0.012115 scc=0.000626647 $X=0 $Y=0 $dt=0
+.ends nmos1v_CDNS_8
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inverter_1                                      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inverter_1 vout vdd vss vin 5 6
+** N=9 EP=6 FDC=2
+X4 7 8 vout vin pmos1v_CDNS_7 $T=900 1770 1 0 $X=0 $Y=1090
+X5 5 9 vout vin 6 nmos1v_CDNS_8 $T=1050 720 1 0 $X=250 $Y=40
+.ends inverter_1
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inverter                                        *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inverter
+** N=11 EP=0 FDC=4
+X0 1 2 3 4 5 5 inverter_1 $T=1680 2270 0 0 $X=1680 $Y=2270
+X1 4 6 7 8 9 5 inverter_1 $T=3490 2270 0 0 $X=3490 $Y=2270
+.ends inverter
