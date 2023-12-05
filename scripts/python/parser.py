@@ -52,7 +52,7 @@ def parse_spi_file(file_path):
         if line.startswith('.ends'):
             subcircuit_name = line.split()[1]
             if subcircuit_name == topCircuit:
-                # print("subcircuit_name = " + subcircuit_name + "setting false")
+               # print("subcircuit_name = " + subcircuit_name + "setting false")
                 tcr = False
 
         if tcr:
@@ -72,7 +72,7 @@ def parse_spi_file(file_path):
             # print("bbName = " + str(bbName))
             for i in range(len(lx)):
                 if lx[i][0] == '$':
-                    # print("Dollar Detected" + lx[i-1])
+                   # print("Dollar Detected" + lx[i-1])
                     typeIdx = i-1
                     break
             tc_bboxes[-1].typeName = lx[typeIdx]
@@ -158,7 +158,7 @@ def draw_netlist(tc_bboxes , adj):
 
 
 
-spi_file_path = 'inverter_final.spi'
+spi_file_path = '../../examples/netlists/four_inv.spi'
 subcircuits, connections , adjMatrix , tc_bboxes = parse_spi_file(spi_file_path)
 print(subcircuits)
 draw_netlist(tc_bboxes , adjMatrix)
@@ -166,7 +166,7 @@ draw_netlist(tc_bboxes , adjMatrix)
 print([bb.name for bb in tc_bboxes])
 # vdd , gnd , vss
 
-f = open("parsed_script.cypher" , "w")
+f = open("../cypher/parsed_script.cypher" , "w")
 # f.write("CREATE\n")
 # f.write("CREATE\n")
 mCount = 0
