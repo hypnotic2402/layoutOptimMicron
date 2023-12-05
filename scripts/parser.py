@@ -98,13 +98,16 @@ def parse_spi_file(file_path):
             if (bb2.name not in bb1.connectedTo) and (bb1.name != bb2.name):
                 
                 for i in bb1.ports:
-                    if i in bb2.ports:
-                        # print('bb1 = ' + bb1.name + ' bb2 = ' + bb2.name + ' bb1cl = ' + str(bb1.connectedTo) + ' bb2cl = ' + str(bb2.connectedTo))
-                        # print(bb1.idx)
-                        # print(bb2.idx)
-                        bb1.connectedTo.append(bb2.idx)
-                        bb2.connectedTo.append(bb1.idx)
-                        break
+                    # print(i)
+                    if ((i != 'vdd') and (i != 'vss')):
+                        print(i)
+                        if i in bb2.ports:
+                            # print('bb1 = ' + bb1.name + ' bb2 = ' + bb2.name + ' bb1cl = ' + str(bb1.connectedTo) + ' bb2cl = ' + str(bb2.connectedTo))
+                            # print(bb1.idx)
+                            # print(bb2.idx)
+                            bb1.connectedTo.append(bb2.idx)
+                            bb2.connectedTo.append(bb1.idx)
+                            break
     
 
     adjMatrix = np.zeros([len(tc_bboxes) , len(tc_bboxes)])
@@ -160,3 +163,25 @@ subcircuits, connections , adjMatrix , tc_bboxes = parse_spi_file(spi_file_path)
 print(subcircuits)
 draw_netlist(tc_bboxes , adjMatrix)
 # draw_circuit_graph(subcircuits, connections)
+print([bb.name for bb in tc_bboxes])
+# vdd , gnd , vss
+
+f = open("parsed_script.cypher" , "w")
+# f.write("CREATE\n")
+# f.write("CREATE\n")
+mCount = 0
+for bb in tc_bboxes:
+    f.write("CREATE (macro" + str(bb.idx) + ": Macro {name:'" + str(bb.name) + "' , x: " + str(bb.x) + " , y: " + str(bb.y) + "})\n")
+    mCount += 1
+wCount = 0
+edgesAdded = []
+for i in range(adjMatrix.shape[0]):
+    for j in range(adjMatrix.shape[1]):
+        if (adjMatrix[i, j] == 1):
+            if ([tc_bboxes[i].idx , tc_bboxes[j].idx] not in edgesAdded):
+                edgesAdded.append([tc_bboxes[i].idx , tc_bboxes[j].idx]  )
+                edgesAdded.append([tc_bboxes[j].idx, tc_bboxes[i].idx])
+                
+                f.write("CREATE (macro" + str(tc_bboxes[i].idx) + ")-[w" + str(wCount) + ":IS_CONNECTED]->(macro"+str(tc_bboxes[j].idx)+")\n")
+                wCount+=1
+f.close()
