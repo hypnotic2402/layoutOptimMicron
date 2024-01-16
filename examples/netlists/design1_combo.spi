@@ -1,0 +1,74 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : design1_combo                                *
+* Netlisted  : Tue Jan 16 15:17:06 2024                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_4                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_4 S_source_0 D_drain_1 B_topTap 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=101.688 scb=0.082094 scc=0.0121216 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_4
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inv_dummy                                       *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inv_dummy VIN VCC VOUT GND
+** N=4 EP=4 FDC=2
+X2 VCC VOUT VCC VIN pmos1v_CDNS_4 $T=1540 3080 0 0 $X=1120 $Y=2880
+M0 VOUT VIN GND GND g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=4.10409 scb=0.000241229 scc=2.8103e-08 $X=1540 $Y=1080 $dt=0
+.ends inv_dummy
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nand_dummy                                      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nand_dummy VINA VINB VCC VOUT GND
+** N=6 EP=5 FDC=4
+X2 VCC VOUT VCC VINA pmos1v_CDNS_4 $T=1440 3880 0 0 $X=1020 $Y=3680
+X3 VCC VOUT VCC VINB pmos1v_CDNS_4 $T=3320 3880 0 0 $X=2900 $Y=3680
+M0 VOUT VINA 6 GND g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=9.22651 scb=0.00772413 scc=0.000211444 $X=1440 $Y=2700 $dt=0
+M1 6 VINB GND GND g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=3.52678 scb=0.000111658 scc=3.66286e-09 $X=3320 $Y=1080 $dt=0
+.ends nand_dummy
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_6                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_6 S_source_0 D_drain_1 B_topTap 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=4.8e-07 AD=6.72e-14 AS=6.72e-14 PD=1.24e-06 PS=1.24e-06 fw=4.8e-07 sa=1.4e-07 sb=1.4e-07 sca=75.4216 scb=0.0690683 scc=0.00879748 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_6
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nor_dummy                                       *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nor_dummy VINA VINB VCC VOUT GND
+** N=6 EP=5 FDC=4
+X4 VCC 6 VCC VINA pmos1v_CDNS_6 $T=1080 3620 0 0 $X=660 $Y=3420
+X5 6 VOUT 6 VINB pmos1v_CDNS_6 $T=3440 2720 0 0 $X=3020 $Y=2520
+M0 VOUT VINA GND GND g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=3.69959 scb=0.00013007 scc=4.39142e-09 $X=1080 $Y=1140 $dt=0
+M1 VOUT VINB GND GND g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=5.05241 scb=0.000962138 scc=1.23864e-06 $X=3440 $Y=1140 $dt=0
+.ends nor_dummy
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: design1_combo                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt design1_combo GND VCC VIN VOUT1 VOUT2
+** N=15 EP=5 FDC=26
+X10 VIN VCC 4 GND inv_dummy $T=400 22360 0 0 $X=200 $Y=22360
+X11 4 VCC 5 GND inv_dummy $T=5280 10440 0 0 $X=5080 $Y=10440
+X12 5 VCC 6 GND inv_dummy $T=9520 4820 0 0 $X=9320 $Y=4820
+X13 4 VCC 7 GND inv_dummy $T=13900 32880 0 0 $X=13700 $Y=32880
+X14 7 VCC 8 GND inv_dummy $T=17920 40040 0 0 $X=17720 $Y=40040
+X15 9 VCC VOUT2 GND inv_dummy $T=40200 10440 0 0 $X=40000 $Y=10440
+X16 11 VCC VOUT1 GND inv_dummy $T=43640 25520 0 0 $X=43440 $Y=25520
+X17 7 5 VCC 13 GND nand_dummy $T=23160 16280 0 0 $X=23160 $Y=16280
+X18 13 6 VCC 9 GND nand_dummy $T=33940 9860 0 0 $X=33940 $Y=9860
+X19 8 13 VCC 11 GND nor_dummy $T=28660 24400 0 0 $X=28660 $Y=24400
+.ends design1_combo
