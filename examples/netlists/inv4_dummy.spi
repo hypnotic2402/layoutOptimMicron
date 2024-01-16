@@ -1,0 +1,41 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : inv4_dummy                                   *
+* Netlisted  : Tue Jan 16 10:06:36 2024                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nmos1v_CDNS_2                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nmos1v_CDNS_2 B_botTap D_drain_1 S_source_0 4
+** N=4 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_botTap g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=4.37807 scb=0.000382947 scc=1.13716e-07 $X=0 $Y=0 $dt=0
+.ends nmos1v_CDNS_2
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_3                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_3 B_topTap D_drain_1 S_source_0 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=101.688 scb=0.082094 scc=0.0121216 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_3
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: inv4_dummy                                      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt inv4_dummy GND VCC VIN VINB VINBB VINBBB VOUT
+** N=7 EP=7 FDC=8
+X6 GND VINB GND VIN nmos1v_CDNS_2 $T=1520 1940 0 0 $X=1100 $Y=1380
+X7 GND VINBB GND VINB nmos1v_CDNS_2 $T=3040 1940 0 0 $X=2620 $Y=1380
+X8 GND VINBBB GND VINBB nmos1v_CDNS_2 $T=4700 1940 0 0 $X=4280 $Y=1380
+X9 GND VOUT GND VINBBB nmos1v_CDNS_2 $T=6240 1940 0 0 $X=5820 $Y=1380
+X10 VCC VINB VCC VIN pmos1v_CDNS_3 $T=1520 3780 0 0 $X=1100 $Y=3580
+X11 VCC VINBB VCC VINB pmos1v_CDNS_3 $T=3040 3780 0 0 $X=2620 $Y=3580
+X12 VCC VINBBB VCC VINBB pmos1v_CDNS_3 $T=4700 3780 0 0 $X=4280 $Y=3580
+X13 VCC VOUT VCC VINBBB pmos1v_CDNS_3 $T=6240 3780 0 0 $X=5820 $Y=3580
+.ends inv4_dummy

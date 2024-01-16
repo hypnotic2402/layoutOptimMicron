@@ -1,0 +1,29 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : nand_dummy                                   *
+* Netlisted  : Tue Jan 16 10:07:58 2024                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_3                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_3 B_topTap D_drain_1 S_source_0 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=101.688 scb=0.082094 scc=0.0121216 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_3
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nand_dummy                                      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nand_dummy GND VCC VINA VINB VOUT
+** N=6 EP=5 FDC=4
+X4 VCC VOUT VCC VINA pmos1v_CDNS_3 $T=1440 3880 0 0 $X=1020 $Y=3680
+X5 VCC VOUT VCC VINB pmos1v_CDNS_3 $T=3320 3880 0 0 $X=2900 $Y=3680
+M0 VOUT VINA 3 3 g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=9.22651 scb=0.00772413 scc=0.000211444 $X=1440 $Y=2700 $dt=0
+M1 3 VINB GND 3 g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=3.52678 scb=0.000111658 scc=3.66286e-09 $X=3320 $Y=1080 $dt=0
+.ends nand_dummy

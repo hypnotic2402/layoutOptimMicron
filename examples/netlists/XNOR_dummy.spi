@@ -1,0 +1,53 @@
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* CDL Netlist:                                              *
+*                                                           *
+* Cell Name  : XNOR_dummy                                   *
+* Netlisted  : Tue Jan 16 09:45:31 2024                     *
+* PVS Version: 21.12-s022 Wed Feb 9 12:12:42 PST 2022      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+*.LDD
+*.DEVTMPLT 0 MN(g45n1svt) _nmos1v ndiff_conn(D) poly_conn(G) ndiff_conn(S) psubstrate(B)
+*.DEVTMPLT 1 MP(g45p1svt) _pmos1v pdiff_conn(D) poly_conn(G) pdiff_conn(S) nwell_conn(B)
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: nmos1v_CDNS_2                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt nmos1v_CDNS_2 B_botTap D_drain_1 S_source_0 4 5
+** N=5 EP=5 FDC=1
+M0 D_drain_1 4 S_source_0 5 g45n1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=3.52678 scb=0.000111658 scc=3.66286e-09 $X=0 $Y=0 $dt=0
+.ends nmos1v_CDNS_2
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_3                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_3 B_topTap D_drain_1 S_source_0 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=4.8e-07 AD=6.72e-14 AS=6.72e-14 PD=1.24e-06 PS=1.24e-06 fw=4.8e-07 sa=1.4e-07 sb=1.4e-07 sca=75.4216 scb=0.0690683 scc=0.00879748 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_3
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: pmos1v_CDNS_4                                   *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt pmos1v_CDNS_4 B_topTap D_drain_1 S_source_0 4
+** N=5 EP=4 FDC=1
+M0 D_drain_1 4 S_source_0 B_topTap g45p1svt L=4.5e-08 W=2.4e-07 AD=3.36e-14 AS=3.36e-14 PD=7.6e-07 PS=7.6e-07 fw=2.4e-07 sa=1.4e-07 sb=1.4e-07 sca=101.688 scb=0.082094 scc=0.0121216 $X=0 $Y=0 $dt=1
+.ends pmos1v_CDNS_4
+
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+* Sub cell: XNOR_dummy                                      *
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *
+.subckt XNOR_dummy GND VCC VINA VINB VOUT
+** N=11 EP=5 FDC=12
+X6 GND 6 GND VINB GND nmos1v_CDNS_2 $T=6020 1620 0 0 $X=5600 $Y=1060
+X7 6 VOUT 6 3 GND nmos1v_CDNS_2 $T=6020 3380 0 0 $X=5600 $Y=2820
+X8 GND 8 GND 4 GND nmos1v_CDNS_2 $T=7200 1620 0 0 $X=6780 $Y=1060
+X9 8 VOUT 8 VINA GND nmos1v_CDNS_2 $T=7200 3380 0 0 $X=6780 $Y=2820
+X10 9 VOUT 9 VINA pmos1v_CDNS_3 $T=6020 5980 0 0 $X=5600 $Y=5780
+X11 VCC 9 VCC 3 pmos1v_CDNS_3 $T=6020 9040 0 0 $X=5600 $Y=8840
+X12 11 VOUT 11 4 pmos1v_CDNS_3 $T=7200 5980 0 0 $X=6780 $Y=5780
+X13 VCC 11 VCC VINB pmos1v_CDNS_3 $T=7200 9040 0 0 $X=6780 $Y=8840
+X14 VCC 3 VCC VINA pmos1v_CDNS_4 $T=1860 9040 0 0 $X=1440 $Y=8840
+X15 VCC 4 VCC VINB pmos1v_CDNS_4 $T=2960 3880 0 0 $X=2540 $Y=3680
+M0 3 VINA GND GND g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=3.99325 scb=0.000199733 scc=1.5113e-08 $X=1860 $Y=6960 $dt=0
+M1 4 VINB GND GND g45n1svt L=4.5e-08 W=1.2e-07 AD=1.68e-14 AS=1.68e-14 PD=5.2e-07 PS=5.2e-07 fw=1.2e-07 sa=1.4e-07 sb=1.4e-07 sca=3.96777 scb=0.000191437 scc=1.31277e-08 $X=2960 $Y=1780 $dt=0
+.ends XNOR_dummy
