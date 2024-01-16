@@ -158,7 +158,7 @@ def draw_netlist(tc_bboxes , adj):
 
 
 
-spi_file_path = '../../examples/netlists/design2.spi'
+spi_file_path = '../../examples/netlists/design1.spi'
 subcircuits, connections , adjMatrix , tc_bboxes = parse_spi_file(spi_file_path)
 print(subcircuits)
 draw_netlist(tc_bboxes , adjMatrix)
@@ -185,3 +185,5 @@ for i in range(adjMatrix.shape[0]):
                 f.write("CREATE (macro" + str(tc_bboxes[i].idx) + ")-[w" + str(wCount) + ":IS_CONNECTED]->(macro"+str(tc_bboxes[j].idx)+")\n")
                 wCount+=1
 f.close()
+
+
