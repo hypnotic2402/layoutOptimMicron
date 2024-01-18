@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np 
 
+ports_named = ['vss' , 'vdd' , 'VCC' , 'GND']
 
 class bbox:
 
@@ -99,7 +100,8 @@ def parse_spi_file(file_path):
                 
                 for i in bb1.ports:
                     # print(i)
-                    if ((i != 'vdd') and (i != 'vss')):
+                    # if ((i != 'vdd') and (i != 'vss')):
+                    if (i not in ports_named):
                         print(i)
                         if i in bb2.ports:
                             # print('bb1 = ' + bb1.name + ' bb2 = ' + bb2.name + ' bb1cl = ' + str(bb1.connectedTo) + ' bb2cl = ' + str(bb2.connectedTo))
@@ -158,7 +160,7 @@ def draw_netlist(tc_bboxes , adj):
 
 
 
-spi_file_path = '../../examples/netlists/design4.spi'
+spi_file_path = '../../examples/netlists/design1_combo.spi'
 subcircuits, connections , adjMatrix , tc_bboxes = parse_spi_file(spi_file_path)
 print(subcircuits)
 draw_netlist(tc_bboxes , adjMatrix)
