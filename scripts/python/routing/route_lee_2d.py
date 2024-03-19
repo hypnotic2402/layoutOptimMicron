@@ -87,8 +87,10 @@ class RoutingSolver:
             nextX = curr_node.x + self.rowNum[dir]
             nextY = curr_node.y + self.colNum[dir]
 
-            if (distMat[nextX][nextY] == currDist - 1):
-                return nextX , nextY , dir
+            if (self.check_valid(nextX , nextY)):
+
+                if (distMat[nextX][nextY] == currDist - 1):
+                    return nextX , nextY , dir
 
             if (dir == 3): dir = 0
             else: dir += 1
@@ -133,7 +135,19 @@ class RoutingSolver:
             print(line)
         print("")
 
-        if plot:
+        if (plot==2):
+            j = 1
+            mat2 = [[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)]
+            for net in nets:
+                mat2[net.src.x][net.src.y] = j
+                mat2[net.dst.x][net.dst.y] = j
+                j+=1
+            plt.imshow(np.array(mat2), cmap='viridis', interpolation='nearest')
+            plt.colorbar()
+            plt.show()
+            
+
+        if (plot==1):
             plt.imshow(np.array(mat), cmap='viridis', interpolation='nearest')
             plt.colorbar()
             plt.show()
@@ -149,10 +163,15 @@ class RoutingSolver:
                 print(line)
             print("")
 
-            if plot:
+            if (plot == 1):
                 plt.imshow(np.array(mat), cmap='viridis', interpolation='nearest')
                 plt.colorbar()
                 plt.show()
+
+        if plot == 2:
+            plt.imshow(np.array(mat), cmap='viridis', interpolation='nearest')
+            plt.colorbar()
+            plt.show()
 
         return mat
 
@@ -164,7 +183,7 @@ class RoutingSolver:
         
         
 if __name__== "__main__":
-    RS = RoutingSolver(5,5)
-    nets = [Net(Cell(2,1) , Cell(4,4)) , Net(Cell(0,3) , Cell(4,3))]
+    RS = RoutingSolver(20,20)
+    nets = [Net(Cell(2,1) , Cell(18,18)) , Net(Cell(0,10) , Cell(16,11)) ,  Net(Cell(1,1) , Cell(10,3))]
     RS.route(nets)
-    x = RS.display_curr_matr(nets , 0)
+    x = RS.display_curr_matr(nets , 2)
