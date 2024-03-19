@@ -160,7 +160,7 @@ def draw_netlist(tc_bboxes , adj):
 
 
 
-spi_file_path = '../../examples/netlists/design1_combo.spi'
+spi_file_path = '../../examples/netlists/twenty.spi'
 subcircuits, connections , adjMatrix , tc_bboxes = parse_spi_file(spi_file_path)
 print(subcircuits)
 draw_netlist(tc_bboxes , adjMatrix)
