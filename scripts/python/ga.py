@@ -116,6 +116,7 @@ def isOverlapping(X , wh):
         yi_max = yi_min + wh[2*i + 1]
         for j in range(int(len(X) /2)):
             if (i != j):
+                print(wh[2*i])
                 xj_min = X[2*j]
                 yj_min = X[2*j + 1]
                 xj_max = xj_min + wh[2*j]

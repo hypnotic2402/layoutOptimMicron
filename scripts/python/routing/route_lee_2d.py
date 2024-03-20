@@ -184,6 +184,6 @@ class RoutingSolver:
         
 if __name__== "__main__":
     RS = RoutingSolver(20,20)
-    nets = [Net(Cell(2,1) , Cell(18,18)) , Net(Cell(0,10) , Cell(16,11)) ,  Net(Cell(1,1) , Cell(10,3))]
+    nets = [Net(Cell(0,10) , Cell(16,11)) , Net(Cell(2,1) , Cell(18,18)) ,  Net(Cell(1,1) , Cell(10,3))]
     RS.route(nets)
     x = RS.display_curr_matr(nets , 2)
