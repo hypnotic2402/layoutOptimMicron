@@ -243,6 +243,8 @@ class RoutingSolver:
     def computeNet(self , src , dst):
 
         dist = self.LeeAlgo(self.matr , src , dst)
+        if (dist == -1):
+            print("Path not found")
 
         curr_dir = 1
         curr_node = dst
@@ -261,17 +263,86 @@ class RoutingSolver:
 
     def route(self , nets):
         i = 1
+
+        for net in nets:
+            self.matr[net.src.z][net.src.x][net.src.y] = 0
+            self.matr[net.dst.z][net.dst.x][net.dst.y] = 0
+
         for net in nets:
             print("Routing Net " + str(i))
+            self.matr[net.src.z][net.src.x][net.src.y] = 1
+            self.matr[net.dst.z][net.dst.x][net.dst.y] = 1
             net.routed = self.computeNet(net.src , net.dst) 
             i+=1
+
+
+    def display_curr_matr(self , nets , plot):
+        mat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
+        l = 0
+        for layer in mat:
+            print("Layer " + str(l))
+            for line in layer:
+                print(line)
+
+            print("")
+            l+=1
+        print("--------------------------------------------")
+        if plot == 2:
+            j = 1
+            mat2 = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
+            for net in nets:
+                mat2[net.src.z][net.src.x][net.src.y] = j
+                mat2[net.dst.z][net.dst.x][net.dst.y] = j
+                j+=1
+
+            plt.imshow(np.array(mat2[0]), cmap='viridis', interpolation='nearest')
+            plt.show()
+            # for sp in range(self.dim_z):
+            #     plt.imshow(np.array(mat2[sp]), cmap='viridis', interpolation='nearest')
+            #     plt.show()
+
+        if plot == 1:
+            plt.imshow(np.array(mat[0]), cmap='viridis', interpolation='nearest')
+
+        i = 1
+
+        for net in nets:
+            for cell in net.routed:
+                mat[cell.z][cell.x][cell.y] = i
+
+            i += 1
+            l = 0
+            for layer in mat:
+                print("Layer " + str(l))
+                for line in layer:
+                    print(line)
+
+                print("")
+                l+=1
+            print("--------------------------------------------")
+
+            if (plot == 1):
+                for sp in range(self.dim_z):
+                    plt.title("Layer " + str(sp))
+                    plt.imshow(np.array(mat[sp]), cmap='viridis', interpolation='nearest')
+                    plt.show()
+
+        if (plot == 2):
+            for sp in range(self.dim_z):
+                plt.title("Layer " + str(sp))
+                plt.imshow(np.array(mat[sp]), cmap='viridis', interpolation='nearest')
+                plt.show()
+
+                
+
+        
           
 
 
+
 if __name__== "__main__":
-    RS = RoutingSolver(5,5,2)
-
-    nets = [Net(Cell(0,0,0) , Cell(3,3,0)) , Net(Cell(2,0,0) , Cell(2,4,0))]
+    RS = RoutingSolver(20,20,2)
+    nets = [Net(Cell(0,10,0) , Cell(16,11,0)) , Net(Cell(2,1,0) , Cell(18,18,0)) ,  Net(Cell(1,1,0) , Cell(10,3,0))]
+    # nets = [Net(Cell(0,0,0) , Cell(3,3,0)) , Net(Cell(2,0,0) , Cell(2,4,0))]
     RS.route(nets)
-
-    print(RS.matr)
+    RS.display_curr_matr(nets , 2)
