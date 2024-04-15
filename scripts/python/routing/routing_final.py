@@ -17,10 +17,10 @@ class queueNode:
         self.dist = dist # Cell's distance from the source  
 
 class Net:
-    def __init__(self , src , dst):
-        self.src = src
-        self.dst = dst
-        self.routed = []
+    def __init__(self,cells):
+        self.cells=cells
+        self.routed=[]
+        self.hpwl = abs(max([c.x for c in cells]) - min([c.x for c in cells])) + abs(max([c.y for c in cells]) - min([c.y for c in cells]))
 
 class RoutingSolver:
 
@@ -41,31 +41,39 @@ class RoutingSolver:
         self.matr = [[[1 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
         self.distMat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
 
+    def block_cells(self , cells):
+        for cell in cells:
+            self.matr[cell.z][cell.x][cell.y] = 0
+
     def check_valid(self , row , col , layer):
         return ((row >= 0) and (row < self.dim_x) and (col >= 0) and (col < self.dim_y) and (layer < self.dim_z) and (layer >= 0))
 
 
-    def LeeAlgo(self , mat , src:Cell, dest:Cell):
+    def LeeAlgo(self , mat , dest:Cell, net:Net):
 
-        if (mat[src.z][src.x][src.y]!=1 or mat[dest.z][dest.x][dest.y]) != 1:
-            return -1
-
+        if (mat[dest.z][dest.x][dest.y]) != 1:
+            return -1,None
+        # for cell in net.routed:
+                        # print(cell.x,cell.y,cell.z)
         self.visited = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
 
-        self.visited[src.z][src.x][src.y] = 1
+        self.visited[dest.z][dest.x][dest.y] = 1
 
         q = deque()
 
-        s = queueNode(src,0)  
+        s = queueNode(dest,0)  
         q.append(s)
 
         while q:
 
             curr = q.popleft()
             point = curr.point
-
-            if (point.x == dest.x) and (point.y == dest.y) and (point.z == dest.z):
-                return curr.dist
+            # for cell in net.routed:
+            #             print(cell.x,cell.y,cell.z)
+            for i in range(len(net.routed)):
+                if net.routed[i].x==point.x and net.routed[i].y==point.y and net.routed[i].z==point.z:
+                    print("Lets go",curr.dist)
+                    return curr.dist,net.routed[i]
 
             if (point.z % 2 == 0):
                 
@@ -151,8 +159,8 @@ class RoutingSolver:
                     Adjcell = queueNode(Cell(row,col,layr),  curr.dist+1)
                     q.append(Adjcell)
 
-
-        return -1
+        # print(self.distMat)
+        return -1,None
 
     def check_path(self , src , dst):
         print(self.LeeAlgo(self.matr , src , dst))
@@ -240,40 +248,67 @@ class RoutingSolver:
 
         return -1
             
-    def computeNet(self , src , dst):
-
-        dist = self.LeeAlgo(self.matr , src , dst)
+    def computeNet(self , dst:Cell, net:Net):
+        dist,curr_node = self.LeeAlgo(self.matr , dst, net)
         if (dist == -1):
             print("Path not found")
 
         curr_dir = 1
-        curr_node = dst
-        wires = []
-
         while(self.distMat[curr_node.z][curr_node.x][curr_node.y] != 0):
-            self.matr[curr_node.z][curr_node.x][curr_node.y] = 0
-            wires.append(curr_node)
+            net.routed.append(curr_node)
             nextX , nextY , nextZ , curr_dir = self.findNextNode(self.distMat , curr_node , curr_dir)
             curr_node = Cell(nextX , nextY , nextZ)
-
-        self.matr[curr_node.z][curr_node.y][curr_node.z] = 0
-        wires.append(curr_node)
+        net.routed.append(curr_node)
+        for cells in net.routed:
+            print(cells.x,cells.y,cells.z)
         self.distMat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
-        return wires
+        return net
 
-    def route(self , nets):
+    def route(self , nets_arr , mode = 0 , custom_order=None):
+        # Mode 0 : as it is
+        # Mode 1 : sort by hpwl
+        # Mode 2 : sort by custom order
+
+        if mode == 0:
+            nets = nets_arr
+        
+        if mode == 1:
+            nets = sorted(nets_arr, key=lambda x : x.hpwl , reverse=True)
+
+        if mode == 2:
+            nets = [nets_arr[_idx] for _idx in custom_order]
+
+
+
+
+
+
         i = 1
-
+        n=len(nets)
         for net in nets:
-            self.matr[net.src.z][net.src.x][net.src.y] = 0
-            self.matr[net.dst.z][net.dst.x][net.dst.y] = 0
+            for cells in net.cells:
+                self.matr[cells.z][cells.x][cells.y]=0
+        for i in range(n):
+            for cells in nets[i].cells:
+                        self.matr[cells.z][cells.x][cells.y]=1
+            for j in range(len(nets[i].cells)):
+                if(j==0):
+                    nets[i].routed.append(nets[i].cells[j])
+                else:
+                    self.computeNet(nets[i].cells[j],nets[i])
+            for cells in nets[i].routed:
+                        self.matr[cells.z][cells.x][cells.y]=0        
 
-        for net in nets:
-            print("Routing Net " + str(i))
-            self.matr[net.src.z][net.src.x][net.src.y] = 1
-            self.matr[net.dst.z][net.dst.x][net.dst.y] = 1
-            net.routed = self.computeNet(net.src , net.dst) 
-            i+=1
+        # for net in nets:
+        #     self.matr[net.src.z][net.src.x][net.src.y] = 0
+        #     self.matr[net.dst.z][net.dst.x][net.dst.y] = 0
+
+        # for net in nets:
+        #     print("Routing Net " + str(i))
+        #     self.matr[net.src.z][net.src.x][net.src.y] = 1
+        #     self.matr[net.dst.z][net.dst.x][net.dst.y] = 1
+        #     net.routed = self.computeNet(net.src , net.dst) 
+        #     i+=1
 
 
     def display_curr_matr(self , nets , plot):
@@ -291,8 +326,8 @@ class RoutingSolver:
             j = 1
             mat2 = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
             for net in nets:
-                mat2[net.src.z][net.src.x][net.src.y] = j
-                mat2[net.dst.z][net.dst.x][net.dst.y] = j
+                for cell in net.cells:
+                    mat2[cell.z][cell.x][cell.y]=j
                 j+=1
 
             plt.imshow(np.array(mat2[0]), cmap='viridis', interpolation='nearest')
@@ -333,21 +368,14 @@ class RoutingSolver:
                 plt.imshow(np.array(mat[sp]), cmap='viridis', interpolation='nearest')
                 plt.show()
 
-                
-
-        
-          
 
 
 
 if __name__== "__main__":
-    RS = RoutingSolver(20,20,4)
-    nets = [Net(Cell(0,10,0) , Cell(16,11,0)) , Net(Cell(2,1,0) , Cell(18,18,0)) ,  Net(Cell(1,1,0) , Cell(10,3,0))]
-    # RS = RoutingSolver(5,5,2)
+    RS = RoutingSolver(20,20,2)
+    # nets = [Net(Cell(0,10,0) , Cell(16,11,0)) , Net(Cell(2,1,0) , Cell(18,18,0)) ,  Net(Cell(1,1,0) , Cell(10,3,0))]
+    nets = [Net([Cell(12,13,0), Cell(0,10,0) , Cell(16,11,0),Cell(13,13,0),Cell(7,5,0)]),Net([Cell(3,7,0),Cell(19,5,0),Cell(3,19,0)])]   
     # nets = [Net(Cell(0,0,0) , Cell(3,3,0)) , Net(Cell(2,0,0) , Cell(2,4,0))]
-    # RS = RoutingSolver(50,50, 2)
-    # nets = [Net(Cell(0,10,0) , Cell(16 , 11, 0)) , Net(Cell(2,1,0) , Cell(18,18,0)) ,  Net(Cell(1,1,0) , Cell(10,3,0)) , Net(Cell(12 , 2 , 0) , Cell(2 , 18 , 0)) , Net(Cell(48 , 2 , 0) , Cell(2 , 4 , 0)) , Net(Cell(2 , 17 , 0) , Cell(4 , 41 , 0)) , Net(Cell(3 , 18 , 0) , Cell(5 , 42 , 0))]
-    # RS = RoutingSolver(4,4,2)
-    # nets = [Net(Cell(0,0,0) , Cell(2,2,0)) , Net(Cell(2,0 , 0) , Cell(0,2 , 0))  , Net(Cell(1,0 , 0) , Cell(1,2 , 0))]
-    RS.route(nets)
+    # print(nets[0].hpwl)
+    RS.route(nets , mode=1)
     RS.display_curr_matr(nets , 2)
