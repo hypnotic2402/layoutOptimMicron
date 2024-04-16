@@ -5,7 +5,7 @@ from tkinter import filedialog
 from tkVideoPlayer import TkinterVideo
 
 root = tk.Tk()
-root.title = ' Placement Process'
+root.title = 'Placement Process'
 
 root.geometry("640x480")
 root.configure(bg = "#FFFFFF")
@@ -75,7 +75,7 @@ Play_Pause_Btn = tk.Button(bottom_frame, text = "Play", bg = "#FFFFFF", font = (
 # Browse = PhotoImage(file = "button_3.png")
 Browse_btn = tk.Button(bottom_frame, text = "Browse", bg = "#FFFFFF", font = ("Calibri", 12, "bold"), command = load_video).pack(padx = 5, ipadx = 10, side="left")
 
-macro_count = 200
+macro_count = 20
 
 Macro_Place = tk.Label(bottom_frame, text = "No of Macros: " + str(macro_count), font = ("Calibri", 12, "bold")).pack(ipadx = 10, side="right")
 
