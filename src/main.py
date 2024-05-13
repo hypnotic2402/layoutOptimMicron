@@ -45,13 +45,13 @@ if __name__ == '__main__':
     # Place
 
     print("Placing Macros")
-    FW.place(iter=1000,genVid=0 , filename="testVid3.avi")
+    FW.place(iter=1000,genVid=0 , filename="testVid4.avi")
     print("Placement Done")
 
     # Route
 
     print("Routing Nets")
-    FW.route(disp=False)
+    FW.route(disp=True)
     print("Routing Done")
 
     # Update to DB
