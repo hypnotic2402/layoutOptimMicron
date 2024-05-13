@@ -66,3 +66,68 @@ def select_files(folder_path, num_files):
     files = os.listdir(folder_path)
     selected_files = random.sample(files, num_files)
     return selected_files
+
+
+
+
+
+def main():
+    folder_path = "text_files"
+    files = os.listdir(folder_path)
+    print("Available files in the folder:")
+    for file_name in files:
+        print(file_name)
+    try:
+        x = int(input("Enter the number of files you want to select: "))
+        if x <= 0:
+            print("Please enter a positive integer.")
+            return
+        elif x > len(files):
+            print(f"There are only {len(files)} files available. Please select a smaller number.")
+            return
+        selected_files = select_files(folder_path, x)
+        print(f"Selected files: {selected_files}")
+
+        for file_name in selected_files:
+            with open(os.path.join(folder_path, file_name), 'r') as file:
+                file_content = file.read()
+                input_ports, output_ports = parse_ports(file_content)
+                print(f"Input ports of {file_name}: {input_ports}")
+                print(f"Output ports of {file_name}: {output_ports}")
+
+        G = create_graph(selected_files,folder_path)
+        nx.draw(G, with_labels=True, font_weight='bold')
+        plt.show()
+
+        cypher_file_path = "output.cypher"
+        generate_cypher_file(selected_files, folder_path, cypher_file_path)
+        print(f"Cypher file generated: {cypher_file_path}")
+
+
+    except ValueError:
+        print("Please enter a valid integer.")
+
+
+
+# def main():
+#     folder_path = "text_files"
+#     files = os.listdir(folder_path)
+#     print("Available files in the folder:")
+#     for file_name in files:
+#         print(file_name)
+#     try:
+#         x = int(input("Enter the number of files you want to select: "))
+#         if x <= 0:
+#             print("Please enter a positive integer.")
+#             return
+#         elif x > len(files):
+#             print(f"There are only {len(files)} files available. Please select a smaller number.")
+#             return
+#         selected_files = select_files(folder_path, x)
+#         print(f"Selected files: {selected_files}")
+#     except ValueError:
+#         print("Please enter a valid integer.")
+
+if __name__ == "__main__":
+    main()
+
