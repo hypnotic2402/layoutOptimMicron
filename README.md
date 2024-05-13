@@ -48,9 +48,14 @@ Route the pins using route(disp). Setting disp to true will display the layers o
 ## Example
 
 Example graph in neo4j:
+![pic1](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/fd98a9e5-5b64-4c8b-be71-6a44ff12a1c3)
 
 run main.py
+![pic2](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/96007a7f-4c22-4768-9816-5b0154c1edf1)
 
+![pic3](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/d92e5fda-4e5f-4702-8ddb-d575cff690ba)
+
+![pic4](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/b39bd85b-9714-40ab-a506-c0d26e4d2fe9)
 
 
 
