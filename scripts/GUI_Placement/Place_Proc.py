@@ -52,7 +52,7 @@ def play_pause_func():
     else:
         vid_player.pause()
         Play_Pause_Btn["text"] = "Play"
-
+ty7#G#GNxC!tpw7
 def video_ended(event):
     progress_slider.set(progress_slider["to"])
     Play_Pause_Btn["text"] = "Play"
