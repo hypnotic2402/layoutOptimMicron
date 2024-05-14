@@ -31,8 +31,18 @@ Start the Neo4j server on your localhost (or at any external host).
 
 Push the netlist on to the Neo4J database with the nodes (macros) having the following properties: w (width) , h(height).
 
-----Text about parser----
+### Parser
 
+To run the parser,
+Run the Script.ipynb file in the scripts folder this would randomly choose the given number of 
+Macros from the design_example folder as specified by the user and connect them randomly to formed a
+closed and fully connected graph.
+
+Once this graph with its nodes and edge properties is created this can be pushed to the Neo4J
+database, from here the nodes (MACROS) can be extracted for the PnR algorithm 
+
+### Placement and Routing
+ 
 Make sure the nodes are pushed to the current active database. Then refer to main.py
 
 Create pins for each of the macros and specify their relative positions on the macro. - Pin(x,  y)
