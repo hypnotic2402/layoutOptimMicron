@@ -1,17 +1,20 @@
 import classes as cls
 import placement
 import routing
+import placement2
 
 class Framework:
     def __init__(self , macros , nets , floor):
         self.macros = macros
         self.nets = nets
         self.floor = floor
-        self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor , verb=False)
+        # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor , verb=False)
+        self.PS = placement2.PlacementSolver(self.macros, self.nets , self.floor , 1000 , margin=60)
         self.RS = routing.RoutingSolver(self.macros, self.nets , self.floor)
 
     def place(self, iter , genVid=0 , filename=None , verbose=False):
-        self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor ,verb=False , pop=100 )
+        # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor ,verb=True , pop=1000 )
+        self.PS = placement2.PlacementSolver(self.macros, self.nets , self.floor , 1000, margin=60)
         self.PS.place(iter)
         if genVid == 1:
             self.PS.genVid(filename)
@@ -53,14 +56,17 @@ if __name__ == '__main__':
     macros = [M1 , M2 , M3]
     nets = [N1 , N2]
     
-    FL = cls.Floor(800,800,10)
+    FL = cls.Floor(800,800,1)
     FW = Framework(macros , nets , FL)
 
     print("___________Placement__________")
-    FW.place(100)
+    FW.place(1000 , genVid=1 , filename="testVid5.avi")
+    
 
     # FW.importPlacement([0,0,500,500,0,400])
-
+    # for macro in macros :
+    #     print(macro.x)
+    #     print(macro.y)
 
     print("_________Routing_________")
     FW.route(disp=False)
