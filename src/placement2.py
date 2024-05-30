@@ -35,7 +35,6 @@ class GA:
             px = []
             for x in range(self.x_len):
                 px.append(random.uniform(self.xl,self.xu))
-
             # px = np.array(px)
             self.pop.append(px)
 

@@ -18,6 +18,10 @@ pip3 install numpy
 pip3 install pandas
 pip3 install matplotlib
 pip3 install neo4j
+pip3 install networkx
+pip3 install pymoo
+pip3 install opencv-python
+sudo apt-get install python3-opencv
 
 ```
 
