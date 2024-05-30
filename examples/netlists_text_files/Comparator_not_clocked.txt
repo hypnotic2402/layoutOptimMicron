@@ -1,0 +1,1 @@
+Comparator_not_clocked I 4 Von Vop Vn Vp O 1 Vout 

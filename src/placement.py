@@ -1,7 +1,8 @@
 import classes as cls
 import numpy as np
 from pymoo.core.problem import Problem
-from pymoo.algorithms.soo.nonconvex.ga import GA
+# from pymoo.algorithms.soo.nonconvex.ga import GA
+from scripts.python.ga2 import GA
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 import math
@@ -163,9 +164,9 @@ if __name__=="__main__":
     macros = [M1 , M2 , M3]
     nets = [N1 , N2]
 
-    PS = PlacementSolver(macros , nets , FL)
+    PS = PlacementSolver(macros , nets , FL, 1)
     PS.run(20)
     print(PS.pRes[-1])
-    PS.genVid('testVid.avi')
+    PS.genVid('placement3.avi')
 
 

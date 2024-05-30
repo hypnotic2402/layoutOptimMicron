@@ -52,6 +52,7 @@ def generate_cypher_file(selected_files, folder_path, cypher_file_path):
             #w indicates width and h indicates height
             f.write(f"CREATE (macro{i}: Macro {{name:'{macro_name}' , w: {macro_w} , h: {macro_h}}})\n")
     
+    st = set()
     for i in range(len(selected_files) - 1):
         # with open(os.path.join(folder_path, selected_files[i]), 'r') as file:
         #     file_content = file.read()
@@ -61,8 +62,18 @@ def generate_cypher_file(selected_files, folder_path, cypher_file_path):
         #     input_ports, _ = parse_ports(file_content)
         # for output_port in output_ports:
         #     for input_port in input_ports:
-        #         f.write(f"CREATE (macro{i})-[w{random.randint(0, 100)}:IS_CONNECTED]->(macro{i+1})\n")
-        f.write(f"CREATE (macro{i})-[w{random.randint(0, 100)}:IS_CONNECTED]->(macro{i+1})\n")
+
+                # while True: 
+                #     rand = random.randint(0, 100)
+                #     if rand not in st: break
+                # st.add(rand)
+                # f.write(f"CREATE (macro{i})-[w{rand}:IS_CONNECTED]->(macro{i+1})\n")
+        while True: 
+            rand = random.randint(0, 100)
+            if rand not in st: break
+        st.add(rand)
+        f.write(f"CREATE (macro{i})-[w{rand}:IS_CONNECTED]->(macro{i+1})\n")
+    
     f.close()
 
 
@@ -76,18 +87,18 @@ def select_files(folder_path, num_files):
 
 
 
-def main(folder_path="../../examples/netlist_text_files"):
+def main(folder_path="../examples/netlists_text_files", num_designs=2):
     files = os.listdir(folder_path)
     print("Available files in the folder:")
     for file_name in files:
         print(file_name)
     try:
-        x = int(input("Enter the number of files you want to select: "))
+        x = num_designs
         if x <= 0:
             print("Please enter a positive integer.")
             return
         elif x > len(files):
-            print(f"There are only {len(files)} files available. Please select a smaller number.")
+            print(f"There are only {len(files)} designs available. Please select a smaller number.")
             return
         selected_files = select_files(folder_path, x)
         print(f"Selected files: {selected_files}")
@@ -100,8 +111,8 @@ def main(folder_path="../../examples/netlist_text_files"):
                 print(f"Output ports of {file_name}: {output_ports}")
 
         G = create_graph(selected_files,folder_path)
-        nx.draw(G, with_labels=True, font_weight='bold')
-        plt.show()
+        # nx.draw(G, with_labels=True, font_weight='bold')
+        # plt.show()
 
         cypher_file_path = "output.cypher"
         generate_cypher_file(selected_files, folder_path, cypher_file_path)

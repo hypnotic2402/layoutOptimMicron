@@ -1,0 +1,1 @@
+Five_transistor_OTA_stacked_single_ended I 6 net0s net1s net2s net3s net4s net5s O 1 vout

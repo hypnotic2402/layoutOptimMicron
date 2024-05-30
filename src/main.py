@@ -1,60 +1,69 @@
 import classes as cls
 import framework as fw
 from neo4j import GraphDatabase
-from extract import extract as extr
+from extract import extract as extr, create_nodes
+import time
+import Scripts 
 
 if __name__ == '__main__':
 
+    # created nodes from the cypher output file from the parser
+
+    Scripts.main(folder_path="../examples/netlists_text_files", num_designs=6)
+
+    create_nodes(
+        cypher_file_path="output.cypher",
+    )
+
     # Extract from DB and required files
-    
-    P3M1 = cls.Pin(0,0)
-    P4M1 = cls.Pin(0,0)
-    P1M1 = cls.Pin(0,0)
-    P2M1 = cls.Pin(0,0)
 
-    # M1 = cls.Macro("m1" , 0 , 100 , 50 , [])
-    
-    # M1.pins.append(P1M1)
-    # M2 = cls.Macro("m2" , 1 ,110 , 40, [])
-    
-    # M2.pins.append(P2M1)
-    # M3 = cls.Macro("m3" , 2 ,60 , 60, [])
-    
-    # M3.pins.append(P3M1)
-    # N1 = cls.Net('n1' , [M1 , M2])
-    # N2 = cls.Net('n2' , [M2 , M3])
-
-    # macros = [M1 , M2 , M3]
-    # nets = [N1 , N2]
 
     nMacros , macros , nets = extr()
-    macros[0].pins.append(P1M1)
-    macros[1].pins.append(P2M1)
-    macros[2].pins.append(P3M1)
-    macros[3].pins.append(P4M1)
-    
-    FL = cls.Floor(800,800,10)
+    for net in nets:
+        print(net.macros[0].w, net.macros[1].h)
+    # macDict = {}
+    for macro in macros:
+        macro.pins.append(cls.Pin(0,0))
+        # print("Macro: ", macro.id, " Pins: ", macro.pins, " Width: ", macro.w, " Height: ", macro.h, " X: ", macro.x, " Y: ", macro.y)
+    # for net in nets:
+    #     if net.macros[0].id not in macDict:
+    #         macDict[net.macros[0].id] = 1
+    #     else: macDict[net.macros[0].id] += 1
+    #     if net.macros[1].id not in macDict:
+    #         macDict[net.macros[1].id] = 1
+    #     else: macDict[net.macros[1].id] += 1
 
-    print(nets[0].macros[0].pins)
+    # for key, vals in macDict.items():
+    #     for i in range(vals):
+    #         macros[key].pins.append(cls.Pin(i, 0))
+
+
+    
+    FL = cls.Floor(800,800,20)
+
 
     # Push to framework : macros, nets, floor
-
 
     FW = fw.Framework(macros , nets, FL)
 
     # Place
 
-    print("Placing Macros")
-    FW.place(iter=1000,genVid=0 , filename="testVid4.avi")
-    print("Placement Done")
+    start_time=time.time()
+    print("___________Placement__________")
+    FW.place(10, genVid=0, filename="images/10MACROS.png")
+    end_time=time.time()
+    print("Placement Time: ", end_time-start_time)
+    # for macro in macros:
+    #     macro.pins.append(cls.Pin(0,0))
+    #     print("Macro: ", macro.id, " Pins: ", macro.pins, " Width: ", macro.w, " Height: ", macro.h, " X: ", macro.x, " Y: ", macro.y)
+    
 
     # Route
 
-    print("Routing Nets")
+    start_time = time.time()
+    print("_________Routing_________")
     FW.route(disp=True)
-    print("Routing Done")
-
-    # Update to DB
-
-
+    end_time = time.time()
+    
+    print("Routing Time: ", end_time - start_time)
 
