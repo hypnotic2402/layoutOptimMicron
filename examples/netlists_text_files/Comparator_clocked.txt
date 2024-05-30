@@ -1,0 +1,1 @@
+Comparator_clocked I 3 VINP VINN CLK O 2 Q QB

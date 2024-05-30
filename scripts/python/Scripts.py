@@ -43,21 +43,26 @@ def generate_cypher_file(selected_files, folder_path, cypher_file_path):
             file_content = file.read()
             _, output_ports = parse_ports(file_content)
             macro_name = f"X{i}"
-            macro_x = random.randint(0, 50000)
-            macro_y = random.randint(0, 50000)
-            f.write(f"CREATE (macro{i}: Macro {{name:'{macro_name}' , x: {macro_x} , y: {macro_y}}})\n")
+            WIDTH_MAX = 150
+            WIDTH_MIN = 50
+            HEIGHT_MAX = 150
+            HEIGHT_MIN = 50
+            macro_w = random.randint(WIDTH_MIN,WIDTH_MAX)
+            macro_h = random.randint(HEIGHT_MIN,HEIGHT_MAX)
+            #w indicates width and h indicates height
+            f.write(f"CREATE (macro{i}: Macro {{name:'{macro_name}' , w: {macro_w} , h: {macro_h}}})\n")
     
     for i in range(len(selected_files) - 1):
-        with open(os.path.join(folder_path, selected_files[i]), 'r') as file:
-            file_content = file.read()
-            _, output_ports = parse_ports(file_content)
-        with open(os.path.join(folder_path, selected_files[i+1]), 'r') as file:
-            file_content = file.read()
-            input_ports, _ = parse_ports(file_content)
-        for output_port in output_ports:
-            for input_port in input_ports:
-                f.write(f"CREATE (macro{i})-[w{random.randint(0, 100)}:IS_CONNECTED]->(macro{i+1})\n")
-    
+        # with open(os.path.join(folder_path, selected_files[i]), 'r') as file:
+        #     file_content = file.read()
+        #     _, output_ports = parse_ports(file_content)
+        # with open(os.path.join(folder_path, selected_files[i+1]), 'r') as file:
+        #     file_content = file.read()
+        #     input_ports, _ = parse_ports(file_content)
+        # for output_port in output_ports:
+        #     for input_port in input_ports:
+        #         f.write(f"CREATE (macro{i})-[w{random.randint(0, 100)}:IS_CONNECTED]->(macro{i+1})\n")
+        f.write(f"CREATE (macro{i})-[w{random.randint(0, 100)}:IS_CONNECTED]->(macro{i+1})\n")
     f.close()
 
 
@@ -71,8 +76,7 @@ def select_files(folder_path, num_files):
 
 
 
-def main():
-    folder_path = "text_files"
+def main(folder_path="../../examples/netlist_text_files"):
     files = os.listdir(folder_path)
     print("Available files in the folder:")
     for file_name in files:

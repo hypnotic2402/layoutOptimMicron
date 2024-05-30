@@ -1,0 +1,1 @@
+Five_transistor_OTA_v2 I 3 Vinp Vinn id O 1 Voutp

@@ -1,7 +1,7 @@
 import classes as cls
-import placement
+# import placement
 import routing
-import placement2
+import placement2 as placement
 
 class Framework:
     def __init__(self , macros , nets , floor):
@@ -9,15 +9,18 @@ class Framework:
         self.nets = nets
         self.floor = floor
         # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor , verb=False)
-        self.PS = placement2.PlacementSolver(self.macros, self.nets , self.floor , 1000 , margin=60)
+        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , 2000 , margin=60)
         self.RS = routing.RoutingSolver(self.macros, self.nets , self.floor)
 
     def place(self, iter , genVid=0 , filename=None , verbose=False):
         # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor ,verb=True , pop=1000 )
-        self.PS = placement2.PlacementSolver(self.macros, self.nets , self.floor , 1000, margin=60)
+        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , 2000, margin=60)
         self.PS.place(iter)
         if genVid == 1:
-            self.PS.genVid(filename)
+            self.PS.genVid(filename, full_video=True)
+        else:
+            self.PS.genVid(filename, full_video=False)
+
 
     def importPlacement(self, xy): #xy = [x1,y1,x2,y2,...]
         for i in range(int(len(xy)/2)):
@@ -32,11 +35,6 @@ class Framework:
 
         if disp:
             self.RS.display_curr_matr(self.RS.Nets , 2)
-
-
-    
-        
-
 
 
 

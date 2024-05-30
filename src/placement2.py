@@ -39,7 +39,8 @@ class GA:
             self.pop.append(px)
 
         for p in self.pop:
-            self.ranked_pop.append((objF(p , self.wh , self.nets) , p))
+            loss = objF(p , self.wh , self.nets)
+            self.ranked_pop.append((loss[0] , p, loss[1], loss[2]))
         self.ranked_pop.sort()
         self.ranked_pop.reverse()
 
@@ -49,8 +50,8 @@ class GA:
         return gene + random.uniform(1-self.mutation_factor , 1+ self.mutation_factor)
 
     def opt(self , n_iter):
-        for i in range(n_iter):
-            print("Iteration " + str(i) + " ----> " + str(self.ranked_pop[0]))
+        for iter in range(n_iter):
+            if iter % 10 == 0: print(f"Iteration {iter} ----> l:{self.ranked_pop[0][0]} h:{self.ranked_pop[0][2]}  o:{self.ranked_pop[0][3]}")
             self.xHis.append(self.ranked_pop[0])
             # elem = np.array(self.best_pop).T
             # print(elem.shape)
@@ -73,10 +74,15 @@ class GA:
                 new_pop.append(x)
 
             self.pop = new_pop
+
             self.ranked_pop = []
 
             for p in self.pop:
-                self.ranked_pop.append((self.objF(p , self.wh , self.nets) , p))
+                for i in range(len(p) // 2):
+                    p[2*i] = min(p[2*i], self.xu)
+                    p[2*i + 1] = min(p[2*i + 1], self.xu)
+                loss = self.objF(p , self.wh , self.nets)
+                self.ranked_pop.append((loss[0] , p, loss[1], loss[2]))
             self.ranked_pop.sort()
             self.ranked_pop.reverse()
 
@@ -102,28 +108,43 @@ class PlacementSolver:
         self.ga.opt(iter)
         X = self.ga.xHis[-1][1]
         for i in range(len(self.macros)):
-            self.macros[i].x = X[2*i]
-            self.macros[i].y = X[(2*i) + 1]
+            self.macros[i].x = min(X[(2*i)], self.floor.w - self.wh[2*i])
+            self.macros[i].y = min(X[(2*i) + 1], self.floor.h - self.wh[2*i + 1])
 
-    def genVid(self ,path):
-    
-        out = cv2.VideoWriter(path,0,40, (self.floor.w,self.floor.h))
-        for frameX in self.ga.xHis:
+    def genVid(self ,path, full_video=False):
+        if not full_video: 
+            # generate only an opencv image of the last frame
+            print("Floor Size: ", self.floor.w, self.floor.h)
             img1 = np.zeros((self.floor.w,self.floor.h, 3), np.uint8)
-            X = frameX[1]
+            X = self.ga.xHis[-1][1]
+            print("X: ", X, len(X))
             for i in range(int(len(X) / 2)):
-                # print(i)
-                xi_min = X[2*i]
-                yi_min = X[2*i + 1]
+                xi_min = self.macros[i].x
+                yi_min = self.macros[i].y
                 xi_max = xi_min + self.wh[2*i]
                 yi_max = yi_min + self.wh[2*i + 1]
-                # print(xi_max)
                 cv2.rectangle(img1, (int(xi_min) , int(yi_min)) , (int(xi_max) , int(yi_max)) , (0,0,255) , 3)
+                cv2.putText(img1, f"{self.macros[i].name}", (int(xi_min), int(yi_min)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
+            cv2.imwrite(path, img1)
 
-            out.write(img1)
+        else:
+            out = cv2.VideoWriter(path,0,40, (self.floor.w,self.floor.h))
+            for frameX in self.ga.xHis:
+                img1 = np.zeros((self.floor.w,self.floor.h, 3), np.uint8)
+                X = frameX[1]
+                for i in range(int(len(X) / 2)):
+                    # print(i)
+                    xi_min = X[2*i]
+                    yi_min = X[2*i + 1]
+                    xi_max = xi_min + self.wh[2*i]
+                    yi_max = yi_min + self.wh[2*i + 1]
+                    # print(xi_max)
+                    cv2.rectangle(img1, (int(xi_min) , int(yi_min)) , (int(xi_max) , int(yi_max)) , (0,0,255) , 3)
 
-        cv2.destroyAllWindows()  
-        out.release()
+                out.write(img1)
+
+            cv2.destroyAllWindows()  
+            out.release()
 
         
 
@@ -154,7 +175,21 @@ def hpwl(X , wh , nets):
 # https://ieeexplore.ieee.org/document/7033338
 
 
+def hpwlFaster(X, wh, nets):
+    X = np.array(X).reshape(-1, 2)
+    s = 0
+    for net in nets:
+        net_coords = X[net]
+        xmin, ymin = net_coords.min(axis=0)
+        xmax, ymax = net_coords.max(axis=0)
+        s += xmax - xmin + ymax - ymin
+    return s
+
+
+
+
 def isOverlapping(X , wh):
+    total_overlapp = 0
     for i in range(int(len(X) / 2)):
         xi_min = X[2*i]
         yi_min = X[2*i + 1]
@@ -171,9 +206,24 @@ def isOverlapping(X , wh):
                 dy = min(yi_max , yj_max) - max(yi_min , yj_min)
 
                 if (dx >= 0) and (dy >= 0):
-                    return dx*dy
+                    total_overlapp += dx*dy
     
-    return 0
+    return total_overlapp
+
+def isOverlappingFaster(X, wh):
+    X = np.array(X).reshape(-1, 2)
+    wh = np.array(wh).reshape(-1, 2)
+    X_max = X + wh
+
+    dx = np.maximum(0, np.minimum(X_max[:, None, 0], X_max[None, :, 0]) - np.maximum(X[:, None, 0], X[None, :, 0]))
+    dy = np.maximum(0, np.minimum(X_max[:, None, 1], X_max[None, :, 1]) - np.maximum(X[:, None, 1], X[None, :, 1]))
+
+    overlap_areas = dx * dy
+    np.fill_diagonal(overlap_areas, 0)  # Exclude self-overlap
+
+    total_overlap = np.sum(overlap_areas)
+    return total_overlap
+
 
 def minDist(X , wh):
     mind = math.inf
@@ -234,4 +284,8 @@ def rect_distance( x1, y1, x1b, y1b , x2, y2, x2b, y2b):
 
 
 def objF(X , wh , nets):
-    return (- hpwl(X , wh , nets) - 1000*isOverlapping(X , wh))
+    overlapp=isOverlappingFaster(X , wh)
+    hpwl_val = hpwlFaster(X , wh , nets)
+    # print("Overlapping: ", overlapp, " HPWL: ", hpwl_val)
+    # return (- 1/len(X) * hpwl_val - 10000*overlapp*len(X), hpwl_val, overlapp)
+    return (- 1 * hpwl_val - (len(X) ** 2) * overlapp, hpwl_val, overlapp)

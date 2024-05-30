@@ -1,6 +1,29 @@
 import classes as cls
 from neo4j import GraphDatabase
 
+
+def create_nodes(
+        uri = "neo4j://localhost", 
+        auth = ("neo4j", "12345678"), 
+        cypher_file_path="output.cypher", 
+        cypher_clear_file_path="../scripts/cypher/clear.cypher",
+        ):
+    
+
+    # Clear the database to avoid duplicate nodes
+    with open(cypher_clear_file_path, 'r') as file:
+        cypher_clear_query = file.read()
+    
+    # Push parser output to the neo4j database
+    with open(cypher_file_path, 'r') as file:
+        cypher_query = file.read()
+
+    with GraphDatabase.driver(uri, auth=auth) as driver:
+        with driver.session() as session:
+            session.run(cypher_clear_query)
+            session.run(cypher_query)
+
+
 def extract(uri = "neo4j://localhost" , auth = ("neo4j", "12345678")):
     # URI = "neo4j://localhost"
     # AUTH = ("neo4j", "12345678")
@@ -34,7 +57,8 @@ def extract(uri = "neo4j://localhost" , auth = ("neo4j", "12345678")):
     i = 0
     for m in mcs:
         # print("HI")
-        # print(m[0].get('w'))
+        # print(m[0].get('x'))
+        # print(m[0].get('y'))
         mcrs.append(cls.Macro("M" + str(macIds[i]) , i , int(m[0].get('w')) , int(m[0].get('h')) , []))
         # print(mcrs[-1].w)
         i+=1
@@ -53,4 +77,8 @@ def extract(uri = "neo4j://localhost" , auth = ("neo4j", "12345678")):
     return nMacros , mcrs , nets
 
 if __name__=="__main__":
-    print(extract())
+    create_nodes()
+    print(extract()[2][0].macros[0].id)
+    # nMacros , mcrs , nets = extract()
+    # 
+

@@ -76,7 +76,16 @@ class RoutingSolver:
     def check_valid(self , row , col , layer):
         return ((row >= 0) and (row < self.dim_x) and (col >= 0) and (col < self.dim_y) and (layer < self.dim_z) and (layer >= 0))
 
-
+    def find_consecutive_coords(self,nets):
+            consecutive_coords = []
+            for net in nets:
+                for i in range(len(net.routed) - 1):
+                    cell1 = net.routed[i]
+                    cell2 = net.routed[i + 1]
+                    if cell1.x == cell2.x and cell1.y == cell2.y and cell1.z != cell2.z:
+                        consecutive_coords.append((cell1.x, cell2.y))
+            return consecutive_coords
+    
     def LeeAlgo(self , mat , dest:Cell, net:Net):
 
         if (mat[dest.z][dest.x][dest.y]) != 1:
@@ -277,10 +286,11 @@ class RoutingSolver:
 
         return -1
             
-    def computeNet(self , dst:Cell, net:Net):
+    def computeNet(self , dst:Cell, net:Net, idx:int):
         dist,curr_node = self.LeeAlgo(self.matr , dst, net)
         if (dist == -1):
-            print("Path not found")
+            print(f"Path not found, skipping net {idx}: {net.cells[0].x} {net.cells[0].y} {net.cells[0].z} -> {net.cells[1].x} {net.cells[1].y} {net.cells[1].z}")
+            return net
 
         curr_dir = 1
         while(self.distMat[curr_node.z][curr_node.x][curr_node.y] != 0):
@@ -324,13 +334,17 @@ class RoutingSolver:
                 if(j==0):
                     nets[i].routed.append(nets[i].cells[j])
                 else:
-                    self.computeNet(nets[i].cells[j],nets[i])
+                    self.computeNet(nets[i].cells[j],nets[i], i)
             for cells in nets[i].routed:
-                        self.matr[cells.z][cells.x][cells.y]=0     
+                self.matr[cells.z][cells.x][cells.y]=0
+         
+            
+            
+                 
 
 
         return nets
-
+        
         # for net in nets:
         #     self.matr[net.src.z][net.src.x][net.src.y] = 0
         #     self.matr[net.dst.z][net.dst.x][net.dst.y] = 0
@@ -346,14 +360,16 @@ class RoutingSolver:
     def display_curr_matr(self , nets , plot):
         mat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
         l = 0
-        for layer in mat:
-            print("Layer " + str(l))
-            for line in layer:
-                print(line)
+        # for layer in mat:
+        #     print("Layer " + str(l))
+        #     for line in layer:
+        #         print(line)
 
-            print("")
-            l+=1
-        print("--------------------------------------------")
+        #     print("")
+        #     l+=1
+        # print("--------------------------------------------")
+        vias = self.find_consecutive_coords(nets)
+        print(vias)
         if plot == 2:
             j = 1
             mat2 = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
@@ -379,14 +395,14 @@ class RoutingSolver:
 
             i += 1
             l = 0
-            for layer in mat:
-                print("Layer " + str(l))
-                for line in layer:
-                    print(line)
+            # for layer in mat:
+            #     print("Layer " + str(l))
+            #     for line in layer:
+            #         print(line)
 
-                print("")
-                l+=1
-            print("--------------------------------------------")
+            #     print("")
+            #     l+=1
+            # print("--------------------------------------------")
 
             if (plot == 1):
                 for sp in range(self.dim_z):
@@ -396,7 +412,23 @@ class RoutingSolver:
 
         if (plot == 2):
             for sp in range(self.dim_z):
-                plt.title("Layer " + str(sp))
-                plt.imshow(np.array(mat[sp]), cmap='viridis', interpolation='nearest')
+                plt.title("WithoutVias Layer " + str(sp))
+
+                    # Display the image
+                plt.imshow(np.array(mat[sp]), interpolation='nearest', vmin=0)
                 plt.show()
+            for sp in range(self.dim_z):
+                plt.title("Layer " + str(sp))
+                for via in vias:
+                    mat[sp][via[0]][via[1]] = -1
+
+                    # Create a custom color map
+                cmap = plt.cm.viridis
+                cmap.set_under('black')
+
+                    # Display the image
+                plt.imshow(np.array(mat[sp]), cmap=cmap, interpolation='nearest', vmin=0)
+                plt.show()
+                # plt.imshow(np.array(mat[sp]), cmap='viridis', interpolation='nearest')
+                # plt.show()
     
