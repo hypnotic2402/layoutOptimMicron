@@ -44,7 +44,7 @@ def hpwl(XX, wh , nets,macros):
 
     return res
 
-def overlapAr(X , wh):
+def overlapAr(X , wh, citr,itr):
     for i in range(int(len(X) / 2)):
         xi_min = X[2*i]
         yi_min = X[2*i + 1]
@@ -62,7 +62,7 @@ def overlapAr(X , wh):
 
                 if (dx >= 0) and (dy >= 0):
                     return dx*dy
-    
+
     return 0
 
 def isOverlapping(XX , wh):

@@ -22,7 +22,7 @@ class Net:
         self.routed_cells = []
 
 class Floor:
-    def __init__(self , w , h , gridUnit , layers = 2):
+    def __init__(self , w , h , gridUnit , layers = 4):
         self.w = w
         self.h = h
         self.gridUnit = gridUnit

@@ -4,6 +4,7 @@ import math
 import classes as cls
 import cv2
 import time
+from logger import Logger
 
 class Individual:
     def __init__(self , xu , xl , yu , yl):
@@ -26,7 +27,7 @@ class GA:
         self.wh = wh
         self.nets = nets
         self.xHis = []
-
+        self.logger = Logger.getInstance()
         self.wh = [x+margin for x in wh]
 
         
@@ -51,7 +52,9 @@ class GA:
 
     def opt(self , n_iter):
         for iter in range(n_iter):
-            if iter % 10 == 0: print(f"Iteration {iter} ----> l:{self.ranked_pop[0][0]} h:{self.ranked_pop[0][2]}  o:{self.ranked_pop[0][3]}")
+            if iter % 10 == 0: 
+                self.logger.log(f"Iteration {iter} ----> l:{self.ranked_pop[0][0]} h:{self.ranked_pop[0][2]}  o:{self.ranked_pop[0][3]}")
+                print(f"Iteration {iter} ----> l:{self.ranked_pop[0][0]} h:{self.ranked_pop[0][2]}  o:{self.ranked_pop[0][3]}")
             self.xHis.append(self.ranked_pop[0])
             # elem = np.array(self.best_pop).T
             # print(elem.shape)
@@ -87,6 +90,12 @@ class GA:
             self.ranked_pop.reverse()
 
             self.best_pop = self.ranked_pop[:int(round(self.pop_size * self.crossover_factor))]
+        
+        isOverlapping(self.xHis[-1][1], self.wh)
+        x_min, y_min, x_max, y_max, tot_area = getBoundingBox(self.xHis[-1][1], self.wh)
+
+
+
 
         
 class PlacementSolver:
@@ -114,10 +123,9 @@ class PlacementSolver:
     def genVid(self ,path, full_video=False):
         if not full_video: 
             # generate only an opencv image of the last frame
-            print("Floor Size: ", self.floor.w, self.floor.h)
-            img1 = np.zeros((self.floor.w,self.floor.h, 3), np.uint8)
+            # print("Floor Size: ", self.floor.w, self.floor.h)
+            img1 = np.zeros((self.floor.h,self.floor.w, 3), np.uint8)
             X = self.ga.xHis[-1][1]
-            print("X: ", X, len(X))
             for i in range(int(len(X) / 2)):
                 xi_min = self.macros[i].x
                 yi_min = self.macros[i].y
@@ -125,6 +133,7 @@ class PlacementSolver:
                 yi_max = yi_min + self.wh[2*i + 1]
                 cv2.rectangle(img1, (int(xi_min) , int(yi_min)) , (int(xi_max) , int(yi_max)) , (0,0,255) , 3)
                 cv2.putText(img1, f"{self.macros[i].name}", (int(xi_min), int(yi_min)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
+            # print("Shape: ", img1.shape)
             cv2.imwrite(path, img1)
 
         else:
@@ -186,16 +195,27 @@ def hpwlFaster(X, wh, nets):
     return s
 
 
+# [[2, 3]
+#  [4, 4]
+#  [5, 7]]
 
+def getBoundingBox(X, wh):
+    X = np.array(X).reshape(-1, 2)
+    wh = np.array(wh).reshape(-1, 2)
+    x_min, y_min = X[:, 0].min(), X[:, 1].min()
+    x_max, y_max = (X + wh)[:, 0].max(), (X + wh)[:, 1].max()
+    tot_area = (wh[:, 0] * wh[:, 1]).sum()
+    return x_min, y_min, x_max, y_max, tot_area
 
 def isOverlapping(X , wh):
+    # print("X: ", X)
     total_overlapp = 0
     for i in range(int(len(X) / 2)):
         xi_min = X[2*i]
         yi_min = X[2*i + 1]
         xi_max = xi_min + wh[2*i]
         yi_max = yi_min + wh[2*i + 1]
-        for j in range(int(len(X) /2)):
+        for j in range(i,int(len(X) /2)):
             if (i != j):
                 xj_min = X[2*j]
                 yj_min = X[2*j + 1]
@@ -206,6 +226,9 @@ def isOverlapping(X , wh):
                 dy = min(yi_max , yj_max) - max(yi_min , yj_min)
 
                 if (dx >= 0) and (dy >= 0):
+                    logger = Logger.getInstance()
+                    logger.log("Macro " + str(i) + " and Macro " + str(j)  + " are overlapping by " + str(dx*dy))
+                        # print("Macro ", i , " and Macro ", j , " are overlapping by ", dx*dy)
                     total_overlapp += dx*dy
     
     return total_overlapp
@@ -219,6 +242,8 @@ def isOverlappingFaster(X, wh):
     dy = np.maximum(0, np.minimum(X_max[:, None, 1], X_max[None, :, 1]) - np.maximum(X[:, None, 1], X[None, :, 1]))
 
     overlap_areas = dx * dy
+    # print("Macro ", i , " and Macro ", j , " are overlapping by ", dx*dy)
+
     np.fill_diagonal(overlap_areas, 0)  # Exclude self-overlap
 
     total_overlap = np.sum(overlap_areas)
