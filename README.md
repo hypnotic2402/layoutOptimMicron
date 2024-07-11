@@ -1,6 +1,5 @@
 # Micron & IIITB : Layout automation tool development for Macro Place and Route.
-
-This is the github repository for the macro place and route tool.
+This is the GitHub repository for the macro place and route tool. The `maskplace` directory contains the code for the RL placement tool called maskplace, while the `Global_Routing_RL` directory houses the code for the RL routing tool.
 
 ## Installation steps
 
