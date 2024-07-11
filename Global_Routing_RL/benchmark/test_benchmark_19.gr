@@ -1,0 +1,32 @@
+grid 16 16 2
+vertical capacity 0 4
+horizontal capacity 4 0
+minimum width 1 1
+minimum spacing 0 0
+via spacing 0 0
+0 0 10 10
+num net 5
+A1 01 5 1
+54  156 1
+122  73 1
+119  69 1
+50  40 1
+108  98 1
+A2 02 2 1
+136  15 1
+34  78 1
+A3 03 4 1
+62  119 1
+86  27 1
+37  83 1
+13  128 1
+A4 04 2 1
+13  26 1
+100  130 1
+A5 05 5 1
+108  61 1
+56  71 1
+56  21 1
+144  53 1
+41  39 1
+0
