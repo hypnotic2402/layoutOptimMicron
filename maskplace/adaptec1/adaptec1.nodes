@@ -1,0 +1,33 @@
+UCLA nodes 1.0
+# Created	:	Jan  6 2005
+# User   	:	Gi-Joon Nam & Mehmet Yildiz at IBM Austin Research({gnam, mcan}@us.ibm.com)
+
+NumNodes : 		211447
+NumTerminals : 		543
+	o210904	500	2136	terminal
+	o210905	500	2136	terminal
+	o210910	276	1044	terminal
+	o210911	164	2136	terminal
+	o210915	1206	2856	terminal
+	o210916	600	2236	terminal
+	o210917	700	2336	terminal
+	o210918	800	2436	terminal
+	o210919	900	2536	terminal
+	o210920	1000	2636	terminal
+	o210921	1100	2736	terminal
+	o210922	1200	2836	terminal
+	o210923	1300	2936	terminal
+	o210924	1400	3036	terminal
+	o210925	1500	3136	terminal
+	o210926	1600	3236	terminal
+	o210927	1700	3336	terminal
+	o210928	1800	3436	terminal
+STOP
+
+	o210929	1900	3536	terminal
+	o210930	2000	3636	terminal
+	o210931	2100	3736	terminal
+	o210932	2200	3836	terminal
+	o210933	2300	3936	terminal
+	o210934	2400	4036	terminal
+	o210935	2500	4136	terminal
