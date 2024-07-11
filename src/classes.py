@@ -15,11 +15,12 @@ class Macro:
         self.orientation = 1 # 1,2,-1,-2
 
 class Net:
-    def __init__(self , name , macros , priority=0):
+    def __init__(self , name , macros, priority=0):
         self.name = name
         self.priority = priority
         self.macros = macros
         self.routed_cells = []
+        self.pins = [] # [(pin1 , macro1) , (pin2 , macro2) ,..]
 
 class Floor:
     def __init__(self , w , h , gridUnit , layers = 4):

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     WIDTH_MIN = 50
     HEIGHT_MAX = 150
     HEIGHT_MIN = 50
-
+    PIN_PER_MACRO=50
     # NET_CNT = 20
     RAND_NET_CNT = 1 # Probability of a macro being connected to a net
 
@@ -36,8 +36,19 @@ if __name__ == '__main__':
         macro_id = i
         macro_name = f"m{macro_id+1}"
         macro = cls.Macro(macro_name, macro_id, width, height, [])
-        pin = cls.Pin(0, 0)
-        macro.pins.append(pin)
+        for _ in range(PIN_PER_MACRO):  # Assuming we want to generate 50 random pins on edges
+            if random.choice([True, False]):
+                # Pin on vertical edges (x = 0 or x = width)
+                x = random.choice([0, width])
+                y = random.randint(0, height)
+                # y=random.choice([0,height])
+            else:
+                # Pin on horizontal edges (y = 0 or y = height)
+                y = random.choice([0, height])
+                x = random.randint(0, width)
+                # x=random.choice([0,width])
+            if cls.Pin(x,y) not in macro.pins:
+                macro.pins.append(cls.Pin(x, y))
         macros.append(macro)
     avg_area=(tot_area)/MACRO_CNT
     print("Area Occupied by Macros is:",tot_area)
@@ -86,7 +97,7 @@ if __name__ == '__main__':
     FW = Framework(macros, nets, FL)
     start_time=time.time()
     print("___________Placement__________")
-    FW.place(1000, genVid=0, filename=f"images/10MACROS_{len(macros)}_{len(nets)}_testhighOL_{FW.floor.w}*{FW.floor.h}.png")
+    FW.place(100, genVid=0, filename=f"images/10MACROS_{len(macros)}_{len(nets)}_NSGA2_{FW.floor.w}*{FW.floor.h}.png")
     end_time=time.time()
     print("Placement Time: ", end_time-start_time)
     start_time = time.time()

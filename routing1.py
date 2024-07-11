@@ -2,12 +2,12 @@ import classes as cls
 import numpy as np
 import pandas as pd
 from collections import deque  
+import math
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.colors import ListedColormap
 import matplotlib.colors as mcolors
 import mplcursors
-import math
 
 def create_custom_cmap(category_colors, default_color='black'):
     categories = list(category_colors.keys())
@@ -43,6 +43,7 @@ class Net:
         self.hpwl = 0
 
     def calcHPWL(self):
+        # print(self.cells)
         self.hpwl = abs(max([c.x for c in self.cells]) - min([c.x for c in self.cells])) + abs(max([c.y for c in self.cells]) - min([c.y for c in self.cells]))
 
 class RoutingSolver:
@@ -56,23 +57,37 @@ class RoutingSolver:
         
         self.layers = self.floor.layers
         self.dim_z = self.layers
-        self.visited = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
-        self.Nets = []
         self.matr = [[[1 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
         self.distMat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
+        self.visited = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
+        self.Nets = []
         for net in self.nets:
-            currNet = Net([])
-            for macro in net.macros:
-                for pin in macro.pins:
-                    xi = macro.x + pin.x
-                    yi = macro.y + pin.y
+            currNet=Net([])
+            for macros in net.macros:
+                for pin in macros.pins:
+                    xi = macros.x + pin.x
+                    yi = macros.y + pin.y
                     xi = int(xi/self.floor.gridUnit)
-                    yi = int(yi/self.floor.gridUnit) 
-
-
+                    yi = int(yi/self.floor.gridUnit)
                     currNet.cells.append(Cell(xi,yi,0))
-                # self.block_cells(macro)
+        # for net in self.nets:
+        #     currNet = Net([])
+        #     for pin,macro in net.pins:
+        #         print(macro.x,macro.y,pin.x,pin.y)
+        #         xi=macro.x+pin.x
+        #         yi=macro.y+pin.y
+        #         xi = int(xi/self.floor.gridUnit)
+        #         yi = int(yi/self.floor.gridUnit)
+        #         currNet.cells.append(Cell(xi,yi,0))
+                # for pin in macro.pins:
+                #     xi = macro.x + pin.x
+                #     yi = macro.y + pin.y
+                #     xi = int(xi/self.floor.gridUnit)
+                #     yi = int(yi/self.floor.gridUnit) 
 
+
+                    # currNet.cells.append(Cell(xi,yi,0))
+                self.block_cells(macros)
             self.Nets.append(currNet)
 
         for net in self.Nets:
@@ -93,8 +108,6 @@ class RoutingSolver:
                 yi = macro.y + j
                 xi = int(xi/self.floor.gridUnit)
                 yi = int(yi/self.floor.gridUnit)
-                print(xi,yi) 
-
                 self.matr[0][int(yi)][int(xi)] = 0
 
     def check_valid(self , row , col , layer):
@@ -378,6 +391,11 @@ class RoutingSolver:
     def display_curr_matr(self , nets , plot):
         mat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
         l = 0
+        # for layer in self.matr:
+        #     for cell in layer:
+        #         print(cell)
+        #     print("")
+        #     break
         # for layer in mat:
         #     print("Layer " + str(l))
         #     for line in layer:

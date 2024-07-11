@@ -1,7 +1,7 @@
 import classes as cls
 # import placement
 import routing
-import placement2 as placement
+import placement3 as placement
 
 class Framework:
     def __init__(self , macros , nets , floor):
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     M3 = cls.Macro("m3" , 2 ,60 , 60, [])
     P3M1 = cls.Pin(0,0)
     M3.pins.append(P3M1)
-    N1 = cls.Net('n1' , [M1 , M2])
+    N1 = cls.Net('n1' , [M1 , M2],[(P1M1,M1),(P2M1,M2)])
     N2 = cls.Net('n2' , [M2 , M3])
 
     macros = [M1 , M2 , M3]
