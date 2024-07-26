@@ -50,3 +50,9 @@ Code taken from https://github.com/laiyao1/maskplace
 7. Please note that we have changed the 'adaptec' dataset. For the original dataset, please refer to [https://github.com/laiyao1/maskplace](https://github.com/laiyao1/maskplace).
    
 8. The `tb_log` directories are the tensorfboard log files. The experiment run can be changed by changing the `SummarWriter` path to the new experiment directory.
+9. To run the maskplace code with gcn run the same file as:
+    
+    ```bash
+    python PPO2.py --enable_gcn --is_test
+
+    ```
