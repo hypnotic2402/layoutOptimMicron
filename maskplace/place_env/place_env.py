@@ -54,8 +54,11 @@ class PlaceEnv(gym.Env):
         self.rudy = np.zeros((self.grid, self.grid))
         for port_name in self.placedb.port_to_net_dict:
             for net_name in self.placedb.port_to_net_dict[port_name]:
+                # get the grid cell in which the pin is present (eg: pin_x and pin_y)
                 pin_x = round(self.placedb.port_info[port_name]['x'] / self.ratio)
                 pin_y = round(self.placedb.port_info[port_name]['y'] / self.ratio)
+
+                # self.net_min_max_ord has the pins which are on the edge of the grid, if not rectified can lead to out of index access 
                 if net_name in self.net_min_max_ord:
                     if pin_x > self.net_min_max_ord[net_name]['max_x']:
                         self.net_min_max_ord[net_name]['max_x'] = pin_x
@@ -82,6 +85,11 @@ class PlaceEnv(gym.Env):
         self.net_placed_set = {}
         self.num_macro_placed = 0
         
+        node_name = self.placedb.node_id_to_name[self.num_macro_placed]
+        size_x = math.ceil(max(1, self.placedb.node_info[node_name]['x']/self.ratio))
+        size_y = math.ceil(max(1, self.placedb.node_info[node_name]['y']/self.ratio))
+
+        # net_img is WireMask and mask is PositionMask
         net_img = np.zeros((self.grid, self.grid))
         net_img_2 = np.zeros((self.grid, self.grid))
 
@@ -93,15 +101,31 @@ class PlaceEnv(gym.Env):
         mask_2 = self.get_mask(canvas, next_x_2, next_y_2)
         for net_name in self.placedb.net_info:
             self.net_placed_set[net_name] = set()
-        self.state = np.concatenate((np.array([self.num_macro_placed]), canvas.flatten(), 
-            net_img.flatten(), mask.flatten(), net_img_2.flatten(), mask_2.flatten(), 
-            np.array([next_x/self.grid, next_y/self.grid])), axis = 0)
+
+        self.state = np.concatenate((
+            np.array([self.num_macro_placed]), 
+            canvas.flatten(), 
+            net_img.flatten(), 
+            mask.flatten(), 
+            net_img_2.flatten(), 
+            mask_2.flatten(), 
+            np.array([next_x/self.grid, next_y/self.grid])
+            ), axis = 0)
+
         self.node_x_max = 0
         self.node_x_min = self.grid
         self.node_y_max = 0
         self.node_y_min = self.grid
 
-        return self.state
+        return self.state, {
+                                "raw_reward": -1, 
+                                "net_img": net_img, 
+                                "mask": mask, 
+                                "iter": self.num_macro_placed,
+                                "state_size_x": size_x, 
+                                "state_size_y": size_y,
+                                "pin_num": len(self.placedb.node_to_net_dict[node_name]),
+                            }
 
     def save_fig(self, file_path):
         fig1 = plt.figure()
@@ -119,6 +143,7 @@ class PlaceEnv(gym.Env):
             )
         fig1.savefig(file_path, dpi=90, bbox_inches='tight')
         plt.close()
+
     # WireMask
     def get_net_img(self, is_next_next = False):
         net_img = np.zeros((self.grid, self.grid))
@@ -224,7 +249,7 @@ class PlaceEnv(gym.Env):
                     self.net_fea[self.placedb.net_info[net_name]['id']][2] = pin_y / self.grid
 
                 # reward for being on the edges of the grid
-                reward += - 1 / 2000 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
+                reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
                 start_x = self.net_min_max_ord[net_name]['min_x']
                 end_x = self.net_min_max_ord[net_name]['max_x']
                 start_y = self.net_min_max_ord[net_name]['min_y']
@@ -246,7 +271,9 @@ class PlaceEnv(gym.Env):
                 self.net_fea[self.placedb.net_info[net_name]['id']][0] = pin_x / self.grid
                 self.net_fea[self.placedb.net_info[net_name]['id']][3] = pin_y / self.grid
                 self.net_fea[self.placedb.net_info[net_name]['id']][2] = pin_y / self.grid
-                reward += 0
+                # reward for being on the edges of the grid
+                reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
+                # reward += 0
 
         self.num_macro_placed += 1
         net_img = np.zeros((self.grid, self.grid))
@@ -289,7 +316,15 @@ class PlaceEnv(gym.Env):
         self.state = np.concatenate((np.array([self.num_macro_placed]), canvas.flatten(), 
             net_img.flatten(), mask.flatten(), net_img_2.flatten(), mask_2.flatten(),
             np.array([next_x/self.grid, next_y/self.grid])), axis = 0)
-        return self.state, reward, done, {"raw_reward": reward, "net_img": net_img, "mask": mask}
+        return self.state, reward, done, {
+                                            "raw_reward": reward, 
+                                            "net_img": net_img, 
+                                            "mask": mask, 
+                                            "iter": self.num_macro_placed,
+                                            "state_size_x": size_x, 
+                                            "state_size_y": size_y,
+                                            "pin_num": len(self.placedb.node_to_net_dict[node_name]),
+                                        }
     
     # PositionMask
     def get_mask(self, canvas, next_x, next_y):

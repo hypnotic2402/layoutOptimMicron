@@ -16,12 +16,12 @@ def round_up_to_next_hundred(n):
 
 if __name__ == '__main__':
 
-    MACRO_CNT = 40
+    MACRO_CNT = random.randint(5, 75)
     WIDTH_MAX = 150
     WIDTH_MIN = 50
     HEIGHT_MAX = 150
     HEIGHT_MIN = 50
-    PIN_PER_MACRO=50
+    PIN_PER_MACRO=1
     # NET_CNT = 20
     RAND_NET_CNT = 1 # Probability of a macro being connected to a net
 
@@ -36,19 +36,20 @@ if __name__ == '__main__':
         macro_id = i
         macro_name = f"m{macro_id+1}"
         macro = cls.Macro(macro_name, macro_id, width, height, [])
-        for _ in range(PIN_PER_MACRO):  # Assuming we want to generate 50 random pins on edges
-            if random.choice([True, False]):
-                # Pin on vertical edges (x = 0 or x = width)
-                x = random.choice([0, width])
-                y = random.randint(0, height)
-                # y=random.choice([0,height])
-            else:
-                # Pin on horizontal edges (y = 0 or y = height)
-                y = random.choice([0, height])
-                x = random.randint(0, width)
-                # x=random.choice([0,width])
-            if cls.Pin(x,y) not in macro.pins:
-                macro.pins.append(cls.Pin(x, y))
+        # for _ in range(PIN_PER_MACRO):  # Assuming we want to generate 50 random pins on edges
+        #     if random.choice([True, False]):
+        #         # Pin on vertical edges (x = 0 or x = width)
+        #         x = random.choice([0, width])
+        #         y = random.randint(0, height)
+        #         # y=random.choice([0,height])
+        #     else:
+        #         # Pin on horizontal edges (y = 0 or y = height)
+        #         y = random.choice([0, height])
+        #         x = random.randint(0, width)
+        #         # x=random.choice([0,width])
+        #     if cls.Pin(x,y) not in macro.pins:
+        #         macro.pins.append(cls.Pin(x, y))
+        
         macros.append(macro)
     avg_area=(tot_area)/MACRO_CNT
     print("Area Occupied by Macros is:",tot_area)

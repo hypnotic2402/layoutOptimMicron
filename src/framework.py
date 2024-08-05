@@ -1,7 +1,7 @@
 import classes as cls
 # import placement
 import routing
-import placement3 as placement
+import placement2 as placement
 
 class Framework:
     def __init__(self , macros , nets , floor):
@@ -15,12 +15,12 @@ class Framework:
     def place(self, iter , genVid=0 , filename=None , verbose=False):
         # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor ,verb=True , pop=1000 )
         self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , 2000, margin=60)
-        self.PS.place(iter)
+        _ret = self.PS.place(iter)
         if genVid == 1:
             self.PS.genVid(filename, full_video=True)
         else:
             self.PS.genVid(filename, full_video=False)
-
+        return _ret
 
     def importPlacement(self, xy): #xy = [x1,y1,x2,y2,...]
         for i in range(int(len(xy)/2)):

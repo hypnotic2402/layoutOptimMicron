@@ -6,6 +6,10 @@ import math
 from framework import Framework
 import cProfile
 from logger import Logger
+from logger1 import Logger1
+from os import sys
+import numpy as np
+import csvwriter
 
 def test_all_macros_connected(macros, nets):
     for macro in macros:
@@ -15,18 +19,23 @@ def test_all_macros_connected(macros, nets):
 def round_up_to_next_hundred(n):
     return math.ceil(n / 100.0) * 100
 
-if __name__ == '__main__':
 
-    if sys.argv[1] == "--file":
-        
+def main(): 
+
+    "Args: iter-> for Datasetgen.py, shows which iteration is running"
+
+
+    if sys.argv[0] == "--file":
+        pass
     else:
-        MACRO_CNT = 10
+        logger1=Logger1.getInstance()
+        MACRO_CNT = 2*random.randint(10, 35)
         WIDTH_MAX = 150
         WIDTH_MIN = 50
         HEIGHT_MAX = 150
         HEIGHT_MIN = 50
-        NUM_NETS = 10
-        LAMBDA = 30
+        NUM_NETS = MACRO_CNT/2
+        LAMBDA = 1
         PIN_PER_MACRO = 1
 
         # NET_CNT = 20
@@ -39,24 +48,11 @@ if __name__ == '__main__':
         for i in range(MACRO_CNT):
             width = random.randint(WIDTH_MIN, WIDTH_MAX)
             height = random.randint(HEIGHT_MIN, HEIGHT_MAX)
+            logger1.log(f"Macro Number:{i+1}, width:{width},height:{height}")
             tot_area+=width*height
             macro_id = i
             macro_name = f"m{macro_id+1}"
             macro = cls.Macro(macro_name, macro_id, width, height, [])
-            # for _ in range(PIN_PER_MACRO):  # Assuming we want to generate 50 random pins on edges
-            #     if random.choice([True, False]):
-            #         # Pin on vertical edges (x = 0 or x = width)
-            #         x = random.choice([0, width])
-            #         # y = random.randint(0, height)
-            #         y=random.choice([0,height])
-            #     else:
-            #         # Pin on horizontal edges (y = 0 or y = height)
-            #         y = random.choice([0, height])
-            #         # x = random.randint(0, width)
-            #         x=random.choice([0,width])
-                
-            #     pin = cls.Pin(x, y)
-            #     macro.pins.append(pin)
             pin = cls.Pin(0, 0)
             macro.pins.append(pin)
             macros.append(macro)
@@ -65,7 +61,8 @@ if __name__ == '__main__':
     gamma=MACRO_CNT/8
     square_floor_plan=round_up_to_next_hundred(math.sqrt(avg_area*(gamma*MACRO_CNT)))
     print("For sqaure shaped floor plan:",square_floor_plan)
-    inp=int(input("For custom floor plan press 1, for square shaped floor plan press 2:"))
+    # inp=int(input("For custom floor plan press 1, for square shaped floor plan press 2:"))
+    inp=2
     if inp==1:
         w=int(input("Enter width of floor plan:"))
         h=int(input("Enter height of floor plan:"))
@@ -97,46 +94,8 @@ if __name__ == '__main__':
         net = cls.Net(net_name, [macro1, macro2],[(macro1.pins[0],macro1),(macro2.pins[0],macro2)])
         nets.append(net)
 
-    # used_pins = set()
-
-    # for i in range(len(macros)):
-    #     if len(nets) == NUM_NETS: 
-    #         break
-    #     macro1 = macros[i]
-    #     macro2 = random.choice(macros)
-    #     while macro2 == macro1:
-    #         macro2 = random.choice(macros)
-    #     pin1 = None
-    #     for potential_pin in macro1.pins:
-    #         if (potential_pin, macro1) not in used_pins:
-    #             pin1 = potential_pin
-    #             break
-    #     if pin1 is None:
-    #         print(f"All pins of macro {macro1.name} are already used.")
-    #         continue
-    #     print(f"Pin {pin1.x},{pin1.y} of {macro1.name} is used.")
-    #     used_pins.add((pin1, macro1))
-    #     pin2 = None
-    #     for potential_pin in macro2.pins:
-    #         if (potential_pin, macro2) not in used_pins:
-    #             pin2 = potential_pin
-    #             break
-    #     if pin2 is None:
-    #         print(f"All pins of macro {macro2.name} are already used.")
-    #         continue
-    #     print(f"Pin {pin2.x},{pin2.y} of {macro2.name} is used.")
-    #     used_pins.add((pin2, macro2))
-    #     net_name = f"n{len(nets)+1}"
-    #     net = cls.Net(net_name, [macro1, macro2],[(pin1,macro1),(pin2,macro2)])
-    #     nets.append(net)
     
-    for net in nets:
-        print(f"Net {net.name} connected between {net.macros[0].name} and {net.macros[1].name}")
-        for pin, macro in net.pins:
-            print(f"Pin {pin.x},{pin.y} of {macro.name}")
 
-    # Ensure all macros are connected to at least one net
-    # test_all_macros_connected(macros, nets)
     
     print("Number of macros: ", len(macros))
     print("Number of nets: ", len(nets))
@@ -144,9 +103,13 @@ if __name__ == '__main__':
     FW = Framework(macros, nets, FL)
     start_time=time.time()
     print("___________Placement__________")
-    FW.place(100, genVid=0, filename=f"images/10MACROS_{len(macros)}_{len(nets)}_testhighOL_{FW.floor.w}*{FW.floor.h}.png")
+    FW.place(1, genVid=0, filename=f"images/10MACROS_{len(macros)}_{len(nets)}_testhighOL_{FW.floor.w}*{FW.floor.h}.png")
     end_time=time.time()
     print("Placement Time: ", end_time-start_time)
+    for net in nets:
+        logger1.log(f"Net {net.name} connected between {net.macros[0].name} and {net.macros[1].name}")
+        for pin, macro in net.pins:
+            print(f"Pin {pin.x},{pin.y} of {macro.name}")
     start_time = time.time()
     macros = FW.macros
     for macro in macros:
@@ -154,7 +117,13 @@ if __name__ == '__main__':
         logger.log(f"{macro.name} : ({macro.x}, {macro.y})")
         print(f"{macro.name} : ({macro.x}, {macro.y})") 
     print("_________Routing_________")
-    FW.route(disp=True)
-    end_time = time.time()
-    print("Routing Time: ", end_time - start_time)
+    # FW.route(disp=True)
+    # end_time = time.time()
+    # print("Routing Time: ", end_time - start_time)
 
+    csvwriter.csvwriter(iter)
+    logger1.close()
+
+
+if __name__ == '__main__':
+    main()

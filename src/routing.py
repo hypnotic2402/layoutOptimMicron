@@ -349,9 +349,13 @@ class RoutingSolver:
 
         i = 1
         n=len(nets)
+        print("Dimx:",self.dim_x,"Dimy:",self.dim_y,"Dimz:",self.dim_z) 
         for net in nets:
             for cells in net.cells:
-                self.matr[cells.z][cells.y][cells.x] = 0
+                try:
+                    self.matr[cells.z][cells.y][cells.x] = 0
+                except:
+                    print("Ye nhi chal rha:: ", cells.z,cells.y,cells.x)
 
         for i in range(n):
             for cells in nets[i].cells:

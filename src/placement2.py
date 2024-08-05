@@ -38,9 +38,9 @@ class GA:
                 px.append(random.uniform(self.xl,self.xu))
             # px = np.array(px)
             self.pop.append(px)
-
+        flg=False
         for p in self.pop:
-            loss = objF(p , self.wh , self.nets)
+            loss = objF(p , self.wh , self.nets,flg)
             self.ranked_pop.append((loss[0] , p, loss[1], loss[2]))
         self.ranked_pop.sort()
         self.ranked_pop.reverse()
@@ -84,13 +84,16 @@ class GA:
                 for i in range(len(p) // 2):
                     p[2*i] = min(p[2*i], self.xu)
                     p[2*i + 1] = min(p[2*i + 1], self.xu)
-                loss = self.objF(p , self.wh , self.nets)
+                loss = self.objF(p , self.wh , self.nets,False)
                 self.ranked_pop.append((loss[0] , p, loss[1], loss[2]))
             self.ranked_pop.sort()
             self.ranked_pop.reverse()
+            flg=False
+            if(iter==n_iter-1):
+                flg=True
 
             self.best_pop = self.ranked_pop[:int(round(self.pop_size * self.crossover_factor))]
-        
+            loss=self.objF(self.best_pop[0][1],self.wh,self.nets,flg)
         isOverlapping(self.xHis[-1][1], self.wh)
         x_min, y_min, x_max, y_max, tot_area = getBoundingBox(self.xHis[-1][1], self.wh)
 
@@ -121,6 +124,9 @@ class PlacementSolver:
         for i in range(len(self.macros)):
             self.macros[i].x = min(X[(2*i)], self.floor.w - self.wh[2*i])
             self.macros[i].y = min(X[(2*i) + 1], self.floor.h - self.wh[2*i + 1])
+        
+        # Total loss, HPWL, Overlapping Area
+        return self.ga.xHis[-1][0], self.ga.xHis[-1][2], self.ga.xHis[-1][3]
 
     def genVid(self ,path, full_video=False):
         if not full_video: 
@@ -186,7 +192,7 @@ def hpwl(X , wh , nets):
 # https://ieeexplore.ieee.org/document/7033338
 
 
-def hpwlFaster(X, wh, nets):
+def hpwlFaster(X, wh, nets,flg):
     X = np.array(X).reshape(-1, 2)
     s = 0
     for net in nets:
@@ -310,9 +316,9 @@ def rect_distance( x1, y1, x1b, y1b , x2, y2, x2b, y2b):
         return 0.
 
 
-def objF(X , wh , nets):
+def objF(X , wh , nets,flg):
     overlapp=isOverlappingFaster(X , wh)
-    hpwl_val = hpwlFaster(X , wh , nets)
+    hpwl_val = hpwlFaster(X , wh , nets,flg)
     # print("Overlapping: ", overlapp, " HPWL: ", hpwl_val)
     # return (- 1/len(X) * hpwl_val - 10000*overlapp*len(X), hpwl_val, overlapp)
     

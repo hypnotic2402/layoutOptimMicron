@@ -25,6 +25,10 @@ from tqdm import tqdm
 import random
 from comp_res import comp_res
 from torch.utils.tensorboard import SummaryWriter   
+import json
+
+import dgl
+import dgl.function as fn
 
 # CUDNN produces runtime error 
 torch.backends.cudnn.enabled = False
@@ -35,6 +39,7 @@ device = torch.device('cuda')
 
 if(torch.cuda.is_available()): 
     device = torch.device('cuda:0') 
+    # device = torch.device('cpu')
     torch.cuda.empty_cache()
     print("Device set to : " + str(torch.cuda.get_device_name(device)))
 else:
@@ -97,8 +102,9 @@ parser.add_argument('--soft_coefficient', type=float, default = 1)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--is_test', action='store_true', default=False)
 parser.add_argument('--save_fig', action='store_true', default=False)
+parser.add_argument('--enable_gcn', action='store_true', default=False)
 args = parser.parse_args()
-writer = SummaryWriter('./tb_log_1')
+writer = SummaryWriter('./tb_log_with_GCN1')
 
 benchmark = args.benchmark
 placedb = PlaceDB(benchmark)
@@ -146,6 +152,172 @@ class MyCNN(nn.Module):
     def forward(self, x):
         return self.cnn(x)
 
+# GCN
+gcn_msg = fn.copy_u(u='h', out='m')
+gcn_reduce = fn.sum(msg='m', out='h')
+def make_edges():
+    edges1 = []
+    edges2 = []
+    for net_name in placedb.net_info:
+        st = set()
+        for node_name in placedb.net_info[net_name]:
+            for node2 in st:
+                edges1.append(placedb.node_info[node_name]["id"])
+                edges2.append(placedb.node_info[node2]["id"])
+                edges1.append(placedb.node_info[node2]["id"])
+                edges2.append(placedb.node_info[node_name]["id"])
+    
+    # store edges1 and edges2 in a file
+    path1 = os.path.dirname(os.path.abspath(__file__)) + '/data/edges_1.dat'
+    path2 = os.path.dirname(os.path.abspath(__file__)) + '/data/edges_2.dat'
+    with open(path1, "w") as f:
+        json.dump(edges1, f)
+    with open(path2, "w") as f:
+        json.dump(edges2, f)
+    return edges1, edges2
+
+
+def build_graph():
+    x1, x2 = make_edges()
+
+    g = dgl.DGLGraph()
+    g.add_nodes(placedb.node_cnt)
+    g.add_edges(x1, x2)
+    # edges are directional in DGL; make them bi-directional
+    g.add_edges(x2, x1)
+
+    return g
+
+class GCNLayer(nn.Module):
+    def __init__(self, in_feats, out_feats):
+        super(GCNLayer, self).__init__()
+        self.linear = nn.Linear(in_feats, out_feats)
+
+    def forward(self, g, feature):
+        # Creating a local scope so that all the stored ndata and edata
+        # (such as the `'h'` ndata below) are automatically popped out
+        # when the scope exits.
+        with g.local_scope():
+            g.ndata['h'] = feature
+            g.update_all(gcn_msg, gcn_reduce)
+            h = g.ndata['h']
+            return self.linear(h)
+
+
+
+class CircuitTrainingModel(nn.Module):
+    EPSILON = 1e-6
+
+    def __init__(
+            self, 
+            num_gcn_layers=3, 
+            edge_fc_layers=1,
+            macro_features_dim=4, 
+            gcn_node_dim=32, 
+            max_macro_num=80,
+            include_min_max_var=True, 
+            is_augmented=False):
+        
+        super(CircuitTrainingModel, self).__init__()
+        self.num_gcn_layers = num_gcn_layers
+        self.gcn_node_dim = gcn_node_dim
+        self.include_min_max_var = include_min_max_var
+        self.is_augmented = is_augmented
+        self.max_macro_num = max_macro_num
+        self.macro_features_dim = macro_features_dim
+
+        self.metadata_encoder = nn.Sequential(
+            nn.Linear(self.gcn_node_dim, self.gcn_node_dim),
+            nn.ReLU()
+        )
+
+        self.feature_encoder = nn.Sequential(
+            nn.Linear(self.macro_features_dim, self.gcn_node_dim),
+            nn.ReLU()
+        )
+
+        self.edge_fc_list = nn.ModuleList([
+            self.create_edge_fc(edge_fc_layers) for _ in range(num_gcn_layers)
+        ])
+
+        self.attention_layer = nn.MultiheadAttention(embed_dim=self.gcn_node_dim, num_heads=1)
+        self.attention_query_layer = nn.Linear(self.gcn_node_dim, self.gcn_node_dim)
+        self.attention_key_layer = nn.Linear(self.gcn_node_dim, self.gcn_node_dim)
+        self.attention_value_layer = nn.Linear(self.gcn_node_dim, self.gcn_node_dim)
+
+        self.value_head = nn.Sequential(
+            nn.Linear(self.gcn_node_dim, 32),
+            nn.ReLU(),
+            nn.Linear(32, 8),
+            nn.ReLU(),
+            nn.Linear(8, 1)
+        )
+
+        if self.is_augmented:
+            self.augmented_embedding_layer = nn.Linear(self.gcn_node_dim, self.gcn_node_dim)
+
+    def create_edge_fc(self, edge_fc_layers):
+        layers = []
+        layers.append(nn.Linear(2*self.gcn_node_dim+1, self.gcn_node_dim))
+        layers.append(nn.ReLU())
+        for _ in range(edge_fc_layers-1):
+            layers.append(nn.Linear(self.gcn_node_dim, self.gcn_node_dim))
+            layers.append(nn.ReLU())
+        return nn.Sequential(*layers)
+
+    def gather_to_edges(self, h_nodes, sparse_adj_i, sparse_adj_j, sparse_adj_weight):
+       h_edges_1 = h_nodes.gather(1, sparse_adj_i.unsqueeze(-1).expand(-1, -1, h_nodes.size(-1)))
+        h_edges_2 = h_nodes.gather(1, sparse_adj_j.unsqueeze(-1).expand(-1, -1, h_nodes.size(-1)))
+        sparse_adj_weight = sparse_adj_weight.unsqueeze(-1)
+        h_edges_12 = torch.cat([h_edges_1, h_edges_2, sparse_adj_weight], dim=-1)
+        h_edges_21 = torch.cat([h_edges_2, h_edges_1, sparse_adj_weight], dim=-1)
+        mask = sparse_adj_weight.squeeze(-1) != 0.0
+        h_edges_i_j = torch.where(mask.unsqueeze(-1), h_edges_12, torch.zeros_like(h_edges_12))
+        h_edges_j_i = torch.where(mask.unsqueeze(-1), h_edges_21, torch.zeros_like(h_edges_21))
+
+        return h_edges_i_j, h_edges_j_i
+
+     def scatter_to_nodes(self, h_edges, sparse_adj_i, sparse_adj_j, num_nodes):
+        batch_size, num_edges, feature_dim = h_edges.size()
+        max_num_nodes = self.max_macro_num  
+        
+        h_nodes_1 = torch.zeros(batch_size, max_num_nodes, feature_dim, device=h_edges.device)
+        count_1 = torch.zeros(batch_size, max_num_nodes, device=h_edges.device)
+        
+        h_nodes_2 = torch.zeros(batch_size, max_num_nodes, feature_dim, device=h_edges.device)
+        count_2 = torch.zeros(batch_size, max_num_nodes, device=h_edges.device)
+
+        for b in range(batch_size):
+            h_nodes_1[b].index_add_(0, sparse_adj_i[b], h_edges[b])
+            count_1[b].index_add_(0, sparse_adj_i[b], torch.ones_like(sparse_adj_i[b], dtype=torch.float, device=h_edges.device))
+
+        for b in range(batch_size):
+            h_nodes_2[b].index_add_(0, sparse_adj_j[b], h_edges[b])
+            count_2[b].index_add_(0, sparse_adj_j[b], torch.ones_like(sparse_adj_j[b], dtype=torch.float, device=h_edges.device))
+
+        h_nodes = (h_nodes_1 + h_nodes_2) / (count_1.unsqueeze(-1) + count_2.unsqueeze(-1) + self.EPSILON)
+
+        return h_nodes
+
+
+    def forward(self, inputs):
+        sparse_adj_i = inputs['sparse_adj_i']
+        sparse_adj_j = inputs['sparse_adj_j']
+        sparse_adj_weight = inputs['sparse_adj_weight']
+        node_features = inputs['node_features']
+        h_nodes = self.feature_encoder(node_features)
+        for i in range(self.num_gcn_layers):
+            # print(h_nodes.shape)
+            h_edges_i_j, h_edges_j_i = self.gather_to_edges(h_nodes, sparse_adj_i, sparse_adj_j, sparse_adj_weight)
+            # print(h_edges_i_j.shape, h_edges_j_i.shape)
+            h_edges = (self.edge_fc_list[i](h_edges_i_j) + self.edge_fc_list[i](h_edges_j_i)) / 2.0
+            h_nodes_new = self.scatter_to_nodes(h_edges, sparse_adj_i, sparse_adj_j, inputs['num_nodes'])
+            h_nodes = h_nodes_new + h_nodes
+            # print(h_nodes.shape, h_nodes_new.shape)
+
+        return h_nodes, h_edges
+
+
 # decoder
 class MyCNNCoarse(nn.Module):
     def __init__(self, res_net):
@@ -176,11 +348,19 @@ class Actor(nn.Module):
         self.fc3 = nn.Linear(64, grid * grid)
         self.cnn = cnn
         self.cnn_coarse = cnn_coarse
-        self.gcn = None
+        self.gcn = gcn
         self.softmax = nn.Softmax(dim=-1)
-        self.merge = nn.Conv2d(2, 1, 1)
+        if args.enable_gcn:
+            # self.merge = nn.Conv2d(3, 1, 1)
+            # self.gcn_layer1 = GCNLayer(6, 64)
+            # self.gcn_layer2 = GCNLayer(64, 256)
+            # self.gcn_layer3 = GCNLayer(256, grid * grid)
+            # self.g = build_graph().to(device)
+            pass
+        else:
+            self.merge = nn.Conv2d(2, 1, 1)
 
-    def forward(self, x, graph = None, cnn_res = None, gcn_res = None, graph_node = None):
+    def forward(self, x, graph_features = None, cnn_res = None, gcn_res = None, graph_node = None):
         if not cnn_res:
             cnn_input = x[:, 1+grid*grid*1: 1+grid*grid*5].reshape(-1, 4, grid, grid)
             mask = x[:, 1+grid*grid*2: 1+grid*grid*3].reshape(-1, grid, grid)
@@ -190,7 +370,19 @@ class Actor(nn.Module):
                                         x[:, 1+grid*grid*3: 1+grid*grid*4].reshape(-1, 1, grid, grid)
                                         ),dim= 1).reshape(-1, 3, grid, grid)
             cnn_coarse_res = self.cnn_coarse(coarse_input)
-            cnn_res = self.merge(torch.cat((cnn_res, cnn_coarse_res), dim=1))
+            # cnn_res = self.merge(torch.cat((cnn_res, cnn_coarse_res), dim=1))
+            if args.enable_gcn:
+                f1 = self.gcn_layer1(self.g, graph_features)
+                f2 = self.gcn_layer2(self.g, f1)
+                f3 = self.gcn_layer3(self.g, f2)
+                gcn_res = f3
+                f3 = f3[x[0, 0].long()].reshape(-1, 1, grid, grid)
+                f3 = f3.repeat(cnn_res.size(0), 1, 1, 1)
+                combined_features = torch.cat((cnn_res, cnn_coarse_res, f3), dim=1)
+            else:
+                combined_features = torch.cat((cnn_res, cnn_coarse_res), dim=1)
+            cnn_res = self.merge(combined_features)
+
         net_img = x[:, 1+grid*grid: 1+grid*grid*2]
         net_img = net_img + x[:, 1+grid*grid*2: 1+grid*grid*3] * 10
         net_img_min = net_img.min() + args.soft_coefficient
@@ -214,6 +406,7 @@ class Critic(nn.Module):
         self.cnn = cnn
         self.gcn = gcn
     def forward(self, x, graph = None, cnn_res = None, gcn_res = None, graph_node = None):
+        # print(x[:, 0]) # torch.Size([64, 250883])
         x1 = F.relu(self.fc1(self.pos_emb(x[:, 0].long())))
         x2 = F.relu(self.fc2(x1))
         value = self.state_value(x2)
@@ -244,6 +437,7 @@ class PPO():
         self.training_step = 0
         self.actor_optimizer = optim.Adam(self.actor_net.parameters(), args.lr)
         self.critic_net_optimizer = optim.Adam(self.critic_net.parameters(), args.lr)
+        self.features = torch.zeros((placed_num_macro, 6), dtype=torch.float).to(device)
 
         actor_params = sum(p.numel() for p in self.actor_net.parameters() if p.requires_grad)
         critic_params = sum(p.numel() for p in self.critic_net.parameters() if p.requires_grad)
@@ -255,10 +449,17 @@ class PPO():
         self.actor_net.load_state_dict(checkpoint['actor_net_dict'])
         self.critic_net.load_state_dict(checkpoint['critic_net_dict'])
     
-    def select_action(self, state):
+    def select_action(self, state, info=None):
+        if info:
+            macro_iter = info["iter"]
+            self.features[macro_iter][0] = info['state_size_x']
+            self.features[macro_iter][1] = info['state_size_y']
+            self.features[macro_iter][2] = info['pin_num']
+            self.features[macro_iter][3] = info['state_size_x'] * info['state_size_y']
+
         state = torch.from_numpy(state).float().to(device).unsqueeze(0)
         with torch.no_grad():
-            action_probs, _, _ = self.actor_net(state)
+            action_probs, _, _ = self.actor_net(state, graph_features=self.features)
         dist = Categorical(action_probs)
         action = dist.sample()
         action_log_prob = dist.log_prob(action)
@@ -276,7 +477,7 @@ class PPO():
             os.mkdir("save_models")
         torch.save({"actor_net_dict": self.actor_net.state_dict(),
                     "critic_net_dict": self.critic_net.state_dict()},
-                    "./save_models/net_dict-{}-{}-".format(benchmark, placed_num_macro)+strftime+"{}".format(int(running_reward))+".pkl")
+                    "./save_models/with_gcn_net_dict-{}-{}-".format(benchmark, placed_num_macro)+strftime+"{}".format(int(running_reward))+".pkl")
 
     def store_transition(self, transition):
         self.buffer.append(transition)
@@ -304,7 +505,7 @@ class PPO():
                 disable = args.disable_tqdm):
                 self.training_step +=1
                 
-                action_probs, _, _ = self.actor_net(state[index].to(device))
+                action_probs, _, _ = self.actor_net(state[index].to(device), graph_features=self.features)
                 dist = Categorical(action_probs)
                 action_log_prob = dist.log_prob(action[index].squeeze())
                 ratio = torch.exp(action_log_prob - old_action_log_prob[index].squeeze())
@@ -362,8 +563,8 @@ def main():
     if not os.path.exists("logs"):
         os.mkdir("logs")
     fwrite = open(log_file_name, "w")
-    load_model_path = None
-    # load_model_path = './save_models/net_dict-adaptec1-18-2024-07-05-14-58-51-835.pkl'
+    # load_model_path = None
+    load_model_path = './save_models/without_gcn_net_dict-adaptec1-38-2024-07-23-11-22-02-101750.pkl'
 
     if load_model_path:
        agent.load_param(load_model_path)
@@ -377,13 +578,14 @@ def main():
         score = 0
         raw_score = 0
         start = time.time()
-        state = env.reset()
-
+        state, info = env.reset()
         done = False
         step = 0
         while done is False:
             state_tmp = state.copy()
-            action, action_log_prob = agent.select_action(state)
+            action, action_log_prob = agent.select_action(state, info)
+            agent.features[int(state[0])][4] = action // grid
+            agent.features[int(state[0])][5] = action % grid
 
             next_state, reward, done, info = env.step(action)
             if args.is_test:
@@ -431,7 +633,7 @@ def main():
             wiremask_images_np = np.array(wiremask_images)  # Convert the list of images to a numpy array
             # Create a video from the numpy array of images
             # imageio.mimsave('./figures/wiremask_{}.mp4'.format(i_epoch), wiremask_images_np, fps=2)
-            
+            print("Creating video...")
             imageio.mimsave('./figures/floorplan_evolution.mp4', images_np, fps=2)
             imageio.mimsave('./figures/wiremask_evolution.mp4', wiremask_images_np, fps=2)
         

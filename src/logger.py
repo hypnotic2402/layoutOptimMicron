@@ -15,3 +15,4 @@ class Logger():
 
     def close(self):
         self.logFile.close()
+
