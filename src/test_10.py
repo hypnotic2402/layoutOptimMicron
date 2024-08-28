@@ -6,7 +6,6 @@ import math
 from framework import Framework
 import cProfile
 from logger import Logger
-from logger1 import Logger1
 from os import sys
 import numpy as np
 import csvwriter
@@ -28,13 +27,14 @@ def main():
     if sys.argv[0] == "--file":
         pass
     else:
-        logger1=Logger1.getInstance()
-        MACRO_CNT = 2*random.randint(10, 35)
+        logger=Logger.getInstance("prelog1.txt")
+        # MACRO_CNT = 2*random.randint(10, 35)
+        MACRO_CNT=100
         WIDTH_MAX = 150
         WIDTH_MIN = 50
         HEIGHT_MAX = 150
         HEIGHT_MIN = 50
-        NUM_NETS = MACRO_CNT/2
+        NUM_NETS = MACRO_CNT+10
         LAMBDA = 1
         PIN_PER_MACRO = 1
 
@@ -48,7 +48,7 @@ def main():
         for i in range(MACRO_CNT):
             width = random.randint(WIDTH_MIN, WIDTH_MAX)
             height = random.randint(HEIGHT_MIN, HEIGHT_MAX)
-            logger1.log(f"Macro Number:{i+1}, width:{width},height:{height}")
+            logger.log(f"Macro Number:{i+1}, width:{width},height:{height}")
             tot_area+=width*height
             macro_id = i
             macro_name = f"m{macro_id+1}"
@@ -100,29 +100,38 @@ def main():
     print("Number of macros: ", len(macros))
     print("Number of nets: ", len(nets))
     FL = cls.Floor(math.ceil(w), math.ceil(h), LAMBDA)
-    FW = Framework(macros, nets, FL)
+
+    MODULE_NAME = "PlacementNSGA2"
+    FW = Framework(macros, nets, FL,population=3000)
     start_time=time.time()
     print("___________Placement__________")
-    FW.place(1, genVid=0, filename=f"images/10MACROS_{len(macros)}_{len(nets)}_testhighOL_{FW.floor.w}*{FW.floor.h}.png")
+    FW.place(
+        iter=600, 
+        genVid=0, 
+        gen_image=1,
+        filename=f"images/10MACROS_{len(macros)}_{len(nets)}_{MODULE_NAME}_{FW.floor.w}*{FW.floor.h}.png",
+        )
+    
     end_time=time.time()
     print("Placement Time: ", end_time-start_time)
     for net in nets:
-        logger1.log(f"Net {net.name} connected between {net.macros[0].name} and {net.macros[1].name}")
+        logger.log(f"Net {net.name} connected between {net.macros[0].name} and {net.macros[1].name}")
         for pin, macro in net.pins:
             print(f"Pin {pin.x},{pin.y} of {macro.name}")
+            logger.log(f"Pin {pin.x},{pin.y} of {macro.name}")
     start_time = time.time()
     macros = FW.macros
     for macro in macros:
         logger = Logger.getInstance()
         logger.log(f"{macro.name} : ({macro.x}, {macro.y})")
         print(f"{macro.name} : ({macro.x}, {macro.y})") 
+
     print("_________Routing_________")
-    # FW.route(disp=True)
-    # end_time = time.time()
-    # print("Routing Time: ", end_time - start_time)
+    FW.route(disp=True)
+    end_time = time.time()
+    print("Routing Time: ", end_time - start_time)
 
     csvwriter.csvwriter(iter)
-    logger1.close()
 
 
 if __name__ == '__main__':

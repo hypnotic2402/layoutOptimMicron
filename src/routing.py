@@ -8,6 +8,7 @@ from matplotlib.colors import ListedColormap
 import matplotlib.colors as mcolors
 import mplcursors
 import math
+from logger import Logger
 
 def create_custom_cmap(category_colors, default_color='black'):
     categories = list(category_colors.keys())
@@ -62,16 +63,22 @@ class RoutingSolver:
         self.distMat = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
         for net in self.nets:
             currNet = Net([])
-            for macro in net.macros:
-                for pin in macro.pins:
-                    xi = macro.x + pin.x
-                    yi = macro.y + pin.y
-                    xi = int(xi/self.floor.gridUnit)
-                    yi = int(yi/self.floor.gridUnit) 
-
-
-                    currNet.cells.append(Cell(xi,yi,0))
+            for pin,macro in net.pins:
+                xi = macro.x + pin.x
+                yi = macro.y + pin.y
+                xi = int(xi/self.floor.gridUnit)
+                yi = int(yi/self.floor.gridUnit) 
+                currNet.cells.append(Cell(xi,yi,0))
                 # self.block_cells(macro)
+            # for macro in net.macros:
+            #     for pin in macro.pins:
+            #         xi = macro.x + pin.x
+            #         yi = macro.y + pin.y
+            #         xi = int(xi/self.floor.gridUnit)
+            #         yi = int(yi/self.floor.gridUnit) 
+
+
+                self.block_cells(macro)
 
             self.Nets.append(currNet)
 
@@ -93,7 +100,7 @@ class RoutingSolver:
                 yi = macro.y + j
                 xi = int(xi/self.floor.gridUnit)
                 yi = int(yi/self.floor.gridUnit)
-                print(xi,yi) 
+                # print(xi,yi) 
 
                 self.matr[0][int(yi)][int(xi)] = 0
 
@@ -391,7 +398,10 @@ class RoutingSolver:
         #     l+=1
         # print("--------------------------------------------")
         vias = self.find_consecutive_coords(nets)
-        # print(vias)
+        logger=Logger.getInstance()
+        for via in vias:
+            logger.log(f"Via at {via[0]},{via[1]} between layers {via[2]} and {via[3]}")
+
         if plot == 2:
             j = 1
             mat2 = [[[0 for _ in range(self.dim_x)] for _ in range(self.dim_y)] for _ in range(self.dim_z) ]
@@ -413,6 +423,8 @@ class RoutingSolver:
 
         for net in nets:
             for cell in net.routed:
+                #add the paths in the logger file
+                logger.log(f"Path {i} : ({cell.x}, {cell.y}, {cell.z})")
                 mat[cell.z][cell.y][cell.x] = i
 
             i += 1

@@ -4,6 +4,7 @@ import math
 import cv2
 import copy
 from logger import Logger
+import cProfile
 
 class Individual:
     def __init__(self, position, objectives):
@@ -47,6 +48,7 @@ class NSGAII:
             if random.random() < self.mutation_prob:
                 individual.position[i] = random.uniform(self.xl, self.xu)
         individual.objectives = self.objF(individual.position, self.wh, self.nets)
+        # print(individual.objectives)
 
     def select_parents(self):
         tournament_size = 2
@@ -126,17 +128,20 @@ class NSGAII:
         self.population = new_population[:self.pop_size]
 
     def opt(self, n_iter):
+        print("n_iter: ", n_iter)
         for iter in range(n_iter):
             if iter % 10 == 0:
                 best = min(self.population, key=lambda x: x.objectives[0])
+                # best = self.population[-1]
+                # print(self.population[0])
                 self.logger.log(f"Iteration {iter} ----> Overlap: {best.objectives[0]} HPWL: {best.objectives[1]} Distance: {best.objectives[2]}")
                 print(f"Iteration {iter} ----> Overlap: {best.objectives[0]} HPWL: {best.objectives[1]} Distance: {best.objectives[2]}")
             offspring = self.generate_offspring()
             self.replace_population(offspring)
 
-        best = min(self.population, key=lambda x: x.objectives[0])
-        isOverlapping(best.position, self.wh)
-        x_min, y_min, x_max, y_max, tot_area = getBoundingBox(best.position, self.wh)
+        self.best = min(self.population, key=lambda x: x.objectives[0])
+        isOverlapping(self.best.position, self.wh)
+        x_min, y_min, x_max, y_max, tot_area = getBoundingBox(self.best.position, self.wh)
 
 class PlacementSolver:
     floor = None
@@ -156,8 +161,9 @@ class PlacementSolver:
         self.nsga2 = NSGAII(pop_size, 0.7, 0.01, objF, 2*len(self.macros), 0, self.floor.h - max(self.wh), self.nets, self.wh, 1)
 
     def place(self, iter):
+        print("NSGA2 in here...")
         self.nsga2.opt(iter)
-        X = self.nsga2.population[0].position
+        X = self.nsga2.best.position
         for i in range(len(self.macros)):
             self.macros[i].x = min(X[(2*i)], self.floor.w - self.wh[2*i])
             self.macros[i].y = min(X[(2*i) + 1], self.floor.h - self.wh[2*i + 1])
@@ -267,8 +273,27 @@ def isOverlapping(X, wh):
                     total_overlapp += dx*dy
     return total_overlapp
 
+def isOverlappingFaster(X, wh):
+    # print("X: ", X)
+    # print("wh: ", wh)
+    # quit the program
+
+    X = np.array(X).reshape(-1, 2)
+    wh = np.array(wh).reshape(-1, 2)
+    X_max = X + wh
+
+    dx = np.maximum(0, np.minimum(X_max[:, None, 0], X_max[None, :, 0]) - np.maximum(X[:, None, 0], X[None, :, 0]))
+    dy = np.maximum(0, np.minimum(X_max[:, None, 1], X_max[None, :, 1]) - np.maximum(X[:, None, 1], X[None, :, 1]))
+
+    overlap_areas = dx * dy
+
+    np.fill_diagonal(overlap_areas, 0)  # Exclude self-overlap
+
+    total_overlap = np.sum(overlap_areas)
+    return total_overlap
+
 def objF(X , wh , nets):
-    overlap = isOverlapping(X, wh)
+    overlap = isOverlappingFaster(X, wh)
     _, _, _, _, total_area = getBoundingBox(X, wh)
     floor_w, floor_h = PlacementSolver.floor.w, PlacementSolver.floor.h
     distance = distance_from_edges(X, wh, floor_w, floor_h)

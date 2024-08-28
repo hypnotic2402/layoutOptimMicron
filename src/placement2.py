@@ -49,8 +49,13 @@ class GA:
 
     def mutate(self , gene):
         return gene + random.uniform(1-self.mutation_factor , 1+ self.mutation_factor)
-
     def opt(self , n_iter):
+        # ok so take average of last 25 iterations ka loss?
+        # yes, isko har iteration pe karne ki jagah har 10 iterstion pe karna hai??
+        # Haa kar sakte...
+        last_25=0
+        # I want to make a queue of 25 elements and keep adding the loss to it and then take the average of it
+        
         for iter in range(n_iter):
             if iter % 10 == 0: 
                 self.logger.log(f"Iteration {iter} ----> l:{self.ranked_pop[0][0]} h:{self.ranked_pop[0][2]}  o:{self.ranked_pop[0][3]}")
@@ -79,13 +84,21 @@ class GA:
             self.pop = new_pop
 
             self.ranked_pop = []
-
+            pop_loss=0
             for p in self.pop:
                 for i in range(len(p) // 2):
                     p[2*i] = min(p[2*i], self.xu)
                     p[2*i + 1] = min(p[2*i + 1], self.xu)
                 loss = self.objF(p , self.wh , self.nets,False)
+                pop_loss+=loss[0]
                 self.ranked_pop.append((loss[0] , p, loss[1], loss[2]))
+            last_25+=pop_loss/self.pop_size 
+            if iter % 10 == 0:
+                if last_25/25 < pop_loss:
+                    break
+
+
+
             self.ranked_pop.sort()
             self.ranked_pop.reverse()
             flg=False
@@ -116,17 +129,17 @@ class PlacementSolver:
         for macro in macros:
             self.wh.append(macro.w)
             self.wh.append(macro.h)
-        self.ga = GA(pop_size , 0.1 , 0.1 , objF , 2*len(self.macros) , 0 ,self.floor.h - max(self.wh) , self.nets , self.wh,1)
+        self.ga = GA(pop_size , 0.01 , 0.1 , objF , 2*len(self.macros) , 0 ,self.floor.h - max(self.wh) , self.nets , self.wh,1)
 
     def place(self , iter):
         self.ga.opt(iter)
-        X = self.ga.xHis[-1][1]
+        X = self.ga.ranked_pop[0][1]
         for i in range(len(self.macros)):
             self.macros[i].x = min(X[(2*i)], self.floor.w - self.wh[2*i])
             self.macros[i].y = min(X[(2*i) + 1], self.floor.h - self.wh[2*i + 1])
         
         # Total loss, HPWL, Overlapping Area
-        return self.ga.xHis[-1][0], self.ga.xHis[-1][2], self.ga.xHis[-1][3]
+        return self.ga.ranked_pop[0][0], self.ga.ranked_pop[0][2], self.ga.ranked_pop[0][3]
 
     def genVid(self ,path, full_video=False):
         if not full_video: 
@@ -242,6 +255,10 @@ def isOverlapping(X , wh):
     return total_overlapp
 
 def isOverlappingFaster(X, wh):
+    # print("X: ", X)
+    # print("wh: ", wh)
+    # quit the program
+
     X = np.array(X).reshape(-1, 2)
     wh = np.array(wh).reshape(-1, 2)
     X_max = X + wh
