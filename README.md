@@ -68,8 +68,16 @@ run main.py
 
 ![pic3](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/d92e5fda-4e5f-4702-8ddb-d575cff690ba)
 
+
+
 ![pic4](https://github.com/hypnotic2402/layoutOptimMicron/assets/75616591/b39bd85b-9714-40ab-a506-c0d26e4d2fe9)
 
+
+**#How to Run the Dataset Generator Part**
+
+This part tests the built framework. In this part, Instead of reading netlist from a particular file, the code itself generates random netlist. The user can change the number of macros and pins per macro as per his will. Then the code is made for randomised connection generator between the macors. 
+
+This code is essentially for testing the model we built. To run this part, run the "test_11.py" file in "src".
 
 
 
