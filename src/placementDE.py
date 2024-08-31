@@ -94,7 +94,7 @@ class PlacementSolver:
         self.wh = []
         for macro in macros:
             self.wh.append(macro.w)
-            self.wh.append(macro.h)2
+            self.wh.append(macro.h)
         self.de = DE(pop_size , 0.5 , 0.7 , objF , 2*len(self.macros) , 0 ,self.floor.h - max(self.wh) , self.nets , self.wh,1)
 
     def place(self , iter):

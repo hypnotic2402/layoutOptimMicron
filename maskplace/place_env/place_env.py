@@ -249,7 +249,7 @@ class PlaceEnv(gym.Env):
                     self.net_fea[self.placedb.net_info[net_name]['id']][2] = pin_y / self.grid
 
                 # reward for being on the edges of the grid
-                reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
+                # reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
                 start_x = self.net_min_max_ord[net_name]['min_x']
                 end_x = self.net_min_max_ord[net_name]['max_x']
                 start_y = self.net_min_max_ord[net_name]['min_y']
@@ -272,7 +272,7 @@ class PlaceEnv(gym.Env):
                 self.net_fea[self.placedb.net_info[net_name]['id']][3] = pin_y / self.grid
                 self.net_fea[self.placedb.net_info[net_name]['id']][2] = pin_y / self.grid
                 # reward for being on the edges of the grid
-                reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
+                # reward += -1 / 20 * (max(0, pin_x - 1)**2 + max(0, pin_y - 1)**2 + max(0, self.grid - pin_x)**2 + max(0, self.grid - pin_y)**2)
                 # reward += 0
 
         self.num_macro_placed += 1

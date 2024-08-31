@@ -4,22 +4,23 @@ import routing
 import placement2 as placement
 
 class Framework:
-    def __init__(self , macros , nets , floor):
+    def __init__(self , macros , nets , floor,population=500):
         self.macros = macros
         self.nets = nets
         self.floor = floor
+        self.GA_population = population
         # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor , verb=False)
-        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , 2000 , margin=60)
+        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , self.GA_population , margin=60)
         self.RS = routing.RoutingSolver(self.macros, self.nets , self.floor)
 
-    def place(self, iter , genVid=0 , filename=None , verbose=False):
+    def place(self, iter , genVid=0, gen_image=1, filename=None , verbose=False, placement=placement):
         # self.PS = placement.PlacementSolver(self.macros, self.nets, self.floor ,verb=True , pop=1000 )
-        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , 2000, margin=60)
+        self.PS = placement.PlacementSolver(self.macros, self.nets , self.floor , self.GA_population, margin=60)
         _ret = self.PS.place(iter)
-        if genVid == 1:
-            self.PS.genVid(filename, full_video=True)
-        else:
+        if gen_image == 1:
             self.PS.genVid(filename, full_video=False)
+        elif genVid == 1:
+                self.PS.genVid(filename, full_video=True)
         return _ret
 
     def importPlacement(self, xy): #xy = [x1,y1,x2,y2,...]

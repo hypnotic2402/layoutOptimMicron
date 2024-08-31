@@ -104,7 +104,8 @@ parser.add_argument('--is_test', action='store_true', default=False)
 parser.add_argument('--save_fig', action='store_true', default=False)
 parser.add_argument('--enable_gcn', action='store_true', default=False)
 args = parser.parse_args()
-writer = SummaryWriter('./tb_log_with_GCN1')
+EXPERIMENT_NAME = 'tb_log_32_gcn_second_without_pretraining'
+writer = SummaryWriter(f'./{EXPERIMENT_NAME}')
 
 benchmark = args.benchmark
 placedb = PlaceDB(benchmark)
@@ -176,6 +177,24 @@ def make_edges():
         json.dump(edges2, f)
     return edges1, edges2
 
+def getMacroFeatures():
+    macro_features = []
+    for node_name in placedb.node_info:
+        macro_features.append([placedb.node_info[node_name]["x"], placedb.node_info[node_name]["y"], 0, 0])
+    return macro_features
+
+edges1, edges2 = make_edges()
+gcn_macro_features = {}
+PADDING_SIZE = 105
+gcn_macro_features['sparse_adj_i'] = torch.tensor(edges1, dtype=torch.long, requires_grad=False).unsqueeze(0).to(device)
+gcn_macro_features['sparse_adj_i'] = F.pad(gcn_macro_features['sparse_adj_i'], (0, PADDING_SIZE - gcn_macro_features['sparse_adj_i'].shape[1]), 'constant', 0)
+gcn_macro_features['sparse_adj_j'] = torch.tensor(edges2, dtype=torch.long, requires_grad=False).unsqueeze(0).to(device)
+gcn_macro_features['sparse_adj_j'] = F.pad(gcn_macro_features['sparse_adj_j'], (0, PADDING_SIZE - gcn_macro_features['sparse_adj_j'].shape[1]), 'constant', 0)
+gcn_macro_features['sparse_adj_weight'] = torch.ones(PADDING_SIZE, dtype=torch.float, requires_grad=False).unsqueeze(0).to(device)
+gcn_macro_features['num_nodes'] = torch.tensor(placedb.node_cnt, dtype=torch.long, requires_grad=False).unsqueeze(0).to(device)
+gcn_macro_features['node_features'] = torch.tensor(getMacroFeatures(), dtype=torch.float, requires_grad=False).unsqueeze(0).to(device)
+gcn_macro_features['node_features'] = F.pad(gcn_macro_features['node_features'], (0, 0, 0, PADDING_SIZE - placedb.node_cnt), "constant", 0)
+# print(gcn_macro_features['sparse_adj_i'].shape, gcn_macro_features['sparse_adj_weight'].shape, gcn_macro_features['node_features'].shape)
 
 def build_graph():
     x1, x2 = make_edges()
@@ -266,7 +285,7 @@ class CircuitTrainingModel(nn.Module):
         return nn.Sequential(*layers)
 
     def gather_to_edges(self, h_nodes, sparse_adj_i, sparse_adj_j, sparse_adj_weight):
-       h_edges_1 = h_nodes.gather(1, sparse_adj_i.unsqueeze(-1).expand(-1, -1, h_nodes.size(-1)))
+        h_edges_1 = h_nodes.gather(1, sparse_adj_i.unsqueeze(-1).expand(-1, -1, h_nodes.size(-1)))
         h_edges_2 = h_nodes.gather(1, sparse_adj_j.unsqueeze(-1).expand(-1, -1, h_nodes.size(-1)))
         sparse_adj_weight = sparse_adj_weight.unsqueeze(-1)
         h_edges_12 = torch.cat([h_edges_1, h_edges_2, sparse_adj_weight], dim=-1)
@@ -277,7 +296,7 @@ class CircuitTrainingModel(nn.Module):
 
         return h_edges_i_j, h_edges_j_i
 
-     def scatter_to_nodes(self, h_edges, sparse_adj_i, sparse_adj_j, num_nodes):
+    def scatter_to_nodes(self, h_edges, sparse_adj_i, sparse_adj_j, num_nodes):
         batch_size, num_edges, feature_dim = h_edges.size()
         max_num_nodes = self.max_macro_num  
         
@@ -351,10 +370,12 @@ class Actor(nn.Module):
         self.gcn = gcn
         self.softmax = nn.Softmax(dim=-1)
         if args.enable_gcn:
-            # self.merge = nn.Conv2d(3, 1, 1)
+            self.merge = nn.Conv2d(3, 1, 1)
             # self.gcn_layer1 = GCNLayer(6, 64)
             # self.gcn_layer2 = GCNLayer(64, 256)
-            # self.gcn_layer3 = GCNLayer(256, grid * grid)
+            self.gcn_conv = nn.Conv1d(in_channels=self.gcn.gcn_node_dim, out_channels=1, kernel_size=1)
+            self.gcn_layer1 = nn.Linear(2 * self.gcn.max_macro_num + 1, grid * grid)
+            # self.gcn_layer2 = nn.Linear(grid * grid // 4, grid * grid)
             # self.g = build_graph().to(device)
             pass
         else:
@@ -372,13 +393,22 @@ class Actor(nn.Module):
             cnn_coarse_res = self.cnn_coarse(coarse_input)
             # cnn_res = self.merge(torch.cat((cnn_res, cnn_coarse_res), dim=1))
             if args.enable_gcn:
-                f1 = self.gcn_layer1(self.g, graph_features)
-                f2 = self.gcn_layer2(self.g, f1)
-                f3 = self.gcn_layer3(self.g, f2)
-                gcn_res = f3
-                f3 = f3[x[0, 0].long()].reshape(-1, 1, grid, grid)
-                f3 = f3.repeat(cnn_res.size(0), 1, 1, 1)
-                combined_features = torch.cat((cnn_res, cnn_coarse_res, f3), dim=1)
+                # get the states
+                self.h_nodes, self.h_edges = self.gcn(gcn_macro_features)
+                self.gcn_embeddings = torch.concat((self.h_nodes, self.h_edges), dim=-2)
+                ind = x[:, 0].long()
+                batch_size = ind.shape[0]
+                emb = self.gcn_embeddings.repeat(batch_size, 1, 1)
+                current_nodes = self.h_nodes[:, ind] # [1, batch_size, 4]
+                current_nodes = current_nodes.permute(1, 0, 2) # [batch_size, 1, 4]
+                gcn_res = torch.concat((emb, current_nodes), dim=-2) # [batch_size, 161, 4]
+                gcn_res = self.gcn_conv(gcn_res.permute(0, 2, 1)) # [batch_size, 4, 161]
+                f1 = self.gcn_layer1(gcn_res)
+                f1 = F.relu(f1)
+                # f1 = self.gcn_layer2(f1)
+                # f1 = F.relu(f1)
+                f1 = f1.reshape(-1, 1, grid, grid)
+                combined_features = torch.cat((cnn_res, cnn_coarse_res, f1), dim=1)
             else:
                 combined_features = torch.cat((cnn_res, cnn_coarse_res), dim=1)
             cnn_res = self.merge(combined_features)
@@ -426,7 +456,8 @@ class PPO():
 
     def __init__(self):
         super(PPO, self).__init__()
-        self.gcn = None
+        self.gcn = torch.load('./save_models/gcn_pretrained_model_32.pth').to(device)
+        print("GCN Embedding size = ", self.gcn.gcn_node_dim)
         self.resnet = torchvision.models.resnet18(pretrained=True)
         self.cnn = MyCNN().to(device)
         self.cnn_coarse = MyCNNCoarse(self.resnet).to(device)
@@ -445,6 +476,7 @@ class PPO():
         print(f'Number of parameters in critic_net: {critic_params}')
 
     def load_param(self, path):
+        print("Loading model from path: ", path)
         checkpoint = torch.load(path, map_location=torch.device(device))
         self.actor_net.load_state_dict(checkpoint['actor_net_dict'])
         self.critic_net.load_state_dict(checkpoint['critic_net_dict'])
@@ -563,8 +595,9 @@ def main():
     if not os.path.exists("logs"):
         os.mkdir("logs")
     fwrite = open(log_file_name, "w")
-    # load_model_path = None
-    load_model_path = './save_models/without_gcn_net_dict-adaptec1-38-2024-07-23-11-22-02-101750.pkl'
+    # load_model_path = "./save_models/with_gcn_net_dict-adaptec1-18-2024-08-20-12-27-57-626.pkl"
+    load_model_path = None
+    # load_model_path = './save_models/without_gcn_net_dict-adaptec1-38-2024-07-23-11-22-02-101750.pkl'
 
     if load_model_path:
        agent.load_param(load_model_path)
